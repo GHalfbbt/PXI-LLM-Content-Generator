@@ -25,7 +25,7 @@ The current phase focuses on:
 
 The project follows a modular and extensible architecture designed to support future features such as RAG, multi-LLM support, image generation, and multi-agent systems.
 
-```text
+```
 PXI-LLM-Content-Generator/
 │
 ├── app/
@@ -83,7 +83,7 @@ PXI-LLM-Content-Generator/
 ├── requirements.txt
 ├── README.md
 └── LICENSE
-
+```
 
 
 

@@ -439,8 +439,33 @@ def render_blog_generation_ui(inputs: dict, ui_language: str) -> None:
     # STATE MANAGEMENT & CONTENT GENERATION
     # ========================================================================
     
-    # Check if the generate button was clicked
-    if inputs["generate_clicked"]:
+    # Create a key for current generation parameters
+    # This helps detect when parameters change and auto-regenerate
+    current_params = {
+        "topic": inputs["topic"],
+        "audience": inputs["audience"],
+        "tone": inputs["tone"],
+        "language": inputs["language"],
+        "llm_provider": inputs["llm_provider"],
+        "style": inputs.get("style", "default"),
+        "identity_name": inputs.get("identity").name if inputs.get("identity") else None,
+        "identity_role": inputs.get("identity").role_or_industry if inputs.get("identity") else None
+    }
+    
+    # Check if parameters have changed since last generation
+    params_changed = False
+    if "last_generation_params" in st.session_state:
+        params_changed = st.session_state["last_generation_params"] != current_params
+    
+    # Check if the generate button was clicked OR if key parameters changed
+    should_generate = inputs["generate_clicked"] or (
+        params_changed and 
+        "last_generated_content" in st.session_state and
+        inputs["topic"].strip() and 
+        inputs["audience"].strip()
+    )
+    
+    if should_generate:
         # ====================================================================
         # INPUT VALIDATION
         # ====================================================================
@@ -475,7 +500,8 @@ def render_blog_generation_ui(inputs: dict, ui_language: str) -> None:
                     tone=inputs["tone"],
                     language=inputs["language"],
                     llm_provider=inputs["llm_provider"],
-                    identity=inputs.get("identity")  # Pass identity if available
+                    identity=inputs.get("identity"),  # Pass identity if available
+                    style=inputs.get("style", "default")  # Pass content writing style
                 )
                 
                 # ============================================================
@@ -486,8 +512,13 @@ def render_blog_generation_ui(inputs: dict, ui_language: str) -> None:
                 # This allows the content to persist across reruns
                 st.session_state["last_generated_content"] = generated_content
                 
-                # Display success message
-                st.success(get_text("success_message", ui_language))
+                # Store the generation parameters used
+                # This allows detecting changes for auto-regeneration
+                st.session_state["last_generation_params"] = current_params
+                
+                # Display success message (only if explicitly clicked generate button)
+                if inputs["generate_clicked"]:
+                    st.success(get_text("success_message", ui_language))
                 
                 # Render the generated content
                 render_output(generated_content, ui_language)
@@ -632,7 +663,8 @@ def render_social_media_ui(inputs: dict, ui_language: str) -> None:
                         platform=platform,
                         language=inputs["language"],  # Pass the content language
                         llm_provider=social_llm_provider,
-                        identity=identity_obj  # Pass identity if available
+                        identity=identity_obj,  # Pass identity if available
+                        style=inputs.get("style", "default")  # Pass content writing style
                     )
                     
                     # Store successful result

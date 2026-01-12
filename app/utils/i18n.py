@@ -64,6 +64,19 @@ TRANSLATIONS: Dict[str, Dict[str, str]] = {
         "lang_french": "French",
         "lang_italian": "Italian",
         
+        # Content Writing Style section
+        "style_selector_header": "Content Writing Style",
+        "style_selector_label": "Select Style",
+        "style_selector_help": "Choose how the content should be written (tone, structure, vocabulary)",
+        "style_default": "Default",
+        "style_seo": "SEO Optimized",
+        "style_divulgative": "Educational/Divulgative",
+        "style_kids": "Kid-Friendly",
+        "style_default_desc": "Standard writing without special constraints",
+        "style_seo_desc": "Optimized for search engines with clear structure and keyword focus",
+        "style_divulgative_desc": "Clear explanations, accessible language, educational approach",
+        "style_kids_desc": "Simple language for children ages 6-10",
+        
         # LLM Provider section
         "provider_header": "🤖 LLM Provider",
         "provider_label": "Select Provider",
@@ -230,8 +243,23 @@ TRANSLATIONS: Dict[str, Dict[str, str]] = {
         "content_language_help": "Selecciona el idioma para generar el contenido",
         
         # Language options translations
+        "lang_english": "Inglés",
         "lang_spanish": "Español",
         "lang_french": "Francés",
+        "lang_italian": "Italiano",
+        
+        # Content Writing Style section
+        "style_selector_header": "Estilo de Escritura del Contenido",
+        "style_selector_label": "Seleccionar Estilo",
+        "style_selector_help": "Elige cómo debe escribirse el contenido (tono, estructura, vocabulario)",
+        "style_default": "Por Defecto",
+        "style_seo": "Optimizado para SEO",
+        "style_divulgative": "Educativo/Divulgativo",
+        "style_kids": "Para Niños",
+        "style_default_desc": "Escritura estándar sin restricciones especiales",
+        "style_seo_desc": "Optimizado para motores de búsqueda con estructura clara y enfoque en palabras clave",
+        "style_divulgative_desc": "Explicaciones claras, lenguaje accesible, enfoque educativo",
+        "style_kids_desc": "Lenguaje simple para niños de 6-10 años",
         
         # LLM Provider section
         "provider_header": "🤖 Proveedor LLM",
@@ -401,7 +429,21 @@ TRANSLATIONS: Dict[str, Dict[str, str]] = {
         "lang_english": "Anglais",
         "lang_spanish": "Espagnol",
         "lang_french": "Français",
-        "lang_italian": "Italien",        
+        "lang_italian": "Italien",
+        
+        # Content Writing Style section
+        "style_selector_header": "Style d'Écriture du Contenu",
+        "style_selector_label": "Sélectionner le Style",
+        "style_selector_help": "Choisissez comment le contenu doit être écrit (ton, structure, vocabulaire)",
+        "style_default": "Par Défaut",
+        "style_seo": "Optimisé SEO",
+        "style_divulgative": "Éducatif/Vulgarisation",
+        "style_kids": "Pour Enfants",
+        "style_default_desc": "Écriture standard sans contraintes spéciales",
+        "style_seo_desc": "Optimisé pour les moteurs de recherche avec structure claire et focus sur les mots-clés",
+        "style_divulgative_desc": "Explications claires, langage accessible, approche éducative",
+        "style_kids_desc": "Langage simple pour enfants de 6-10 ans",
+        
         # LLM Provider section
         "provider_header": "🤖 Fournisseur LLM",
         "provider_label": "Sélectionner le Fournisseur",
@@ -496,7 +538,21 @@ TRANSLATIONS: Dict[str, Dict[str, str]] = {
         "lang_english": "Inglese",
         "lang_spanish": "Spagnolo",
         "lang_french": "Francese",
-        "lang_italian": "Italiano",        
+        "lang_italian": "Italiano",
+        
+        # Content Writing Style section
+        "style_selector_header": "Stile di Scrittura del Contenuto",
+        "style_selector_label": "Seleziona Stile",
+        "style_selector_help": "Scegli come deve essere scritto il contenuto (tono, struttura, vocabolario)",
+        "style_default": "Predefinito",
+        "style_seo": "Ottimizzato SEO",
+        "style_divulgative": "Educativo/Divulgativo",
+        "style_kids": "Per Bambini",
+        "style_default_desc": "Scrittura standard senza vincoli speciali",
+        "style_seo_desc": "Ottimizzato per i motori di ricerca con struttura chiara e focus sulle parole chiave",
+        "style_divulgative_desc": "Spiegazioni chiare, linguaggio accessibile, approccio educativo",
+        "style_kids_desc": "Linguaggio semplice per bambini dai 6 ai 10 anni",
+        
         # LLM Provider section
         "provider_header": "🤖 Provider LLM",
         "provider_label": "Seleziona Provider",

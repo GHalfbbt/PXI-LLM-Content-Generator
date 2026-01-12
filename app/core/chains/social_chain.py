@@ -10,6 +10,7 @@ from typing import Optional
 
 from app.core.social.factory import SocialAdapterFactory
 from app.core.identity import IdentityProfile, build_identity_context
+from app.core.styles import StyleFactory
 from app.llms.factory import LLMFactory
 from app.config import settings
 
@@ -25,7 +26,8 @@ def generate_social_post(
     llm_provider: str = "groq",
     temperature: float = None,
     max_tokens: int = None,
-    identity: Optional[IdentityProfile] = None
+    identity: Optional[IdentityProfile] = None,
+    style: str = "default"
 ) -> str:
     """
     Generate a platform-specific social media post from a blog article.
@@ -60,6 +62,9 @@ def generate_social_post(
         max_tokens: Maximum tokens to generate.
                    Defaults to settings.DEFAULT_MAX_TOKENS (2048).
         identity: Identity information to personalize the social post.
+        style: Content writing style to apply.
+              Options: "default", "seo", "divulgative", "kids".
+              Defaults to "default" (no style modification).
                  If provided, the post reflects this identity's voice.
     
     Returns:
@@ -97,27 +102,38 @@ def generate_social_post(
     # Each adapter provides its own optimized prompt
     prompt = adapter.get_prompt()
     
-    # Step 3: Inject identity context if provided
-    # Identity context is prepended to personalize the social post
+    # Step 3: Build the complete prompt with optional enhancements
+    # The injection order is: Identity (if provided) -> Style (if not default) -> Platform prompt
+    template_parts = []
+    
+    # First: Add identity context if provided (highest priority)
     if identity:
         identity_context = build_identity_context(identity)
-        
-        # Modify the prompt template to include identity context
-        from langchain_core.prompts import PromptTemplate
-        original_template = prompt.template
-        enhanced_template = identity_context + "\n\n" + original_template
-        # Ensure input_variables includes both blog_content and language
-        prompt = PromptTemplate(
-            template=enhanced_template,
-            input_variables=["blog_content", "language"]
-        )
-    else:
-        # No identity - but still need to ensure correct input_variables
-        from langchain_core.prompts import PromptTemplate
-        prompt = PromptTemplate(
-            template=prompt.template,
-            input_variables=["blog_content", "language"]
-        )
+        template_parts.append(identity_context)
+    
+    # Second: Add style instruction if not default
+    if style != "default":
+        try:
+            style_instance = StyleFactory.create_style(style)
+            style_instruction = style_instance.get_instruction()
+            if style_instruction:  # Only add if non-empty
+                template_parts.append(style_instruction)
+        except ValueError as e:
+            # If invalid style, log warning but continue with default
+            print(f"Warning: {str(e)}. Using default style.")
+    
+    # Third: Add the platform-specific prompt template
+    template_parts.append(prompt.template)
+    
+    # Combine all parts with double newlines for clear separation
+    enhanced_template = "\n\n".join(template_parts)
+    
+    # Create new prompt with enhanced template
+    from langchain_core.prompts import PromptTemplate
+    prompt = PromptTemplate(
+        template=enhanced_template,
+        input_variables=["blog_content", "language"]
+    )
     
     # Step 4: Initialize the LLM provider using the factory
     # The factory handles Groq/Ollama instantiation and validation

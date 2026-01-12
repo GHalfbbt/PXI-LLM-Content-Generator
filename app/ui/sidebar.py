@@ -214,18 +214,29 @@ def render_sidebar() -> Dict[str, Any]:
     
     # Show identity fields when enabled
     if identity_enabled:
+        # Initialize default index for identity type
+        # Preserve selection across language changes by checking session state
+        default_type_index = 0
+        if "identity_type" in st.session_state:
+            # Get the current value from session state
+            current_type = st.session_state.identity_type
+            # Check if it matches "person" or "company" keywords
+            if "company" in current_type.lower() or "empresa" in current_type.lower() or "société" in current_type.lower() or "azienda" in current_type.lower():
+                default_type_index = 1
+        
         # Identity type selector
         identity_type = st.sidebar.selectbox(
             label=get_text("identity_type_label", ui_language),
             options=[get_text("identity_type_person", ui_language), get_text("identity_type_company", ui_language)],
-            index=0,
+            index=default_type_index,
             help=get_text("identity_type_help", ui_language),
             key="identity_type"
         )
         
-        # Name input
+        # Name input - use session state value as default
         identity_name = st.sidebar.text_input(
             label=get_text("identity_name_label", ui_language),
+            value=st.session_state.get("identity_name", ""),
             placeholder=get_text("identity_name_placeholder", ui_language),
             help=get_text("identity_name_help", ui_language),
             key="identity_name"
@@ -245,6 +256,7 @@ def render_sidebar() -> Dict[str, Any]:
         
         identity_role = st.sidebar.text_input(
             label=role_label,
+            value=st.session_state.get("identity_role", ""),
             placeholder=get_text("identity_role_placeholder_person", ui_language) if is_person else get_text("identity_role_placeholder_company", ui_language),
             help=get_text("identity_role_help_person", ui_language) if is_person else get_text("identity_role_help_company", ui_language),
             key="identity_role"
@@ -255,6 +267,7 @@ def render_sidebar() -> Dict[str, Any]:
         
         identity_description = st.sidebar.text_area(
             label=description_label,
+            value=st.session_state.get("identity_description", ""),
             placeholder=get_text("identity_background_placeholder", ui_language) if is_person else get_text("identity_about_placeholder", ui_language),
             help=get_text("identity_background_help", ui_language),
             height=100,
@@ -285,6 +298,7 @@ def render_sidebar() -> Dict[str, Any]:
         if tone_selection == get_text("identity_custom", ui_language) or tone_selection == "":
             identity_tone = st.sidebar.text_input(
                 label=get_text("identity_tone_custom_label", ui_language) if tone_selection == get_text("identity_custom", ui_language) else get_text("identity_tone_custom_placeholder", ui_language),
+                value=st.session_state.get("identity_tone_custom", ""),
                 placeholder="e.g., witty and educational",
                 key="identity_tone_custom"
             )
@@ -315,11 +329,55 @@ def render_sidebar() -> Dict[str, Any]:
         if values_selection == get_text("identity_custom", ui_language) or values_selection == "":
             identity_values = st.sidebar.text_input(
                 label=get_text("identity_values_custom_label", ui_language) if values_selection == get_text("identity_custom", ui_language) else get_text("identity_values_custom_placeholder", ui_language),
+                value=st.session_state.get("identity_values_custom", ""),
                 placeholder="e.g., speed, simplicity, customer focus",
                 key="identity_values_custom"
             )
         else:
             identity_values = values_selection
+    
+    # Add spacing
+    st.sidebar.divider()
+    
+    # ========================================================================
+    # SECTION 4.7: CONTENT WRITING STYLE
+    # ========================================================================
+    st.sidebar.subheader(f"✍️ {get_text('style_selector_header', ui_language)}")
+    
+    # Style options mapping
+    style_options = {
+        "default": get_text("style_default", ui_language),
+        "seo": get_text("style_seo", ui_language),
+        "divulgative": get_text("style_divulgative", ui_language),
+        "kids": get_text("style_kids", ui_language)
+    }
+    
+    # Get display labels
+    style_display_options = list(style_options.values())
+    
+    # Create reverse mapping
+    display_to_style = {v: k for k, v in style_options.items()}
+    
+    style_display = st.sidebar.selectbox(
+        label=get_text("style_selector_label", ui_language),
+        options=style_display_options,
+        index=0,  # Default to "Default"
+        help=get_text("style_selector_help", ui_language),
+        key="style_select"
+    )
+    
+    # Map display value back to internal style key
+    selected_style = display_to_style.get(style_display, "default")
+    
+    # Show style description
+    style_descriptions = {
+        "default": get_text("style_default_desc", ui_language),
+        "seo": get_text("style_seo_desc", ui_language),
+        "divulgative": get_text("style_divulgative_desc", ui_language),
+        "kids": get_text("style_kids_desc", ui_language)
+    }
+    
+    st.sidebar.caption(f"ℹ️ {style_descriptions[selected_style]}")
     
     # Add spacing
     st.sidebar.divider()
@@ -382,6 +440,7 @@ def render_sidebar() -> Dict[str, Any]:
         "audience": audience,
         "tone": tone,
         "language": language,
+        "style": selected_style,  # Content writing style
         "llm_provider": llm_provider,
         "generate_clicked": generate_clicked,
         # Identity profile fields

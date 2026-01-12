@@ -7,7 +7,6 @@ that generates blog posts based on user inputs.
 """
 
 from typing import Optional
-from langchain.chains import LLMChain
 
 from app.core.prompts.blog import get_blog_prompt
 from app.llms.groq_llm import GroqLLM
@@ -99,29 +98,32 @@ def generate_blog_content(
     # This template defines how the LLM should structure the blog post
     prompt = get_blog_prompt()
     
-    # Step 5: Create the LangChain LLMChain
-    # This chain connects the prompt template with the LLM,
-    # allowing us to pass variables and get generated content
-    chain = LLMChain(
-        llm=llm,
-        prompt=prompt,
-        verbose=False  # Set to True for debugging to see the full prompt
-    )
+    # Step 5: Create the LangChain chain using LCEL (LangChain Expression Language)
+    # Modern LangChain uses the pipe operator (|) to chain components
+    # This creates a pipeline: prompt -> LLM -> output parser
+    chain = prompt | llm
     
     # Step 6: Execute the chain with user inputs
     # The chain will format the prompt with the provided variables
     # and send it to the LLM for content generation
     try:
-        result = chain.run(
-            topic=topic,
-            audience=audience,
-            tone=tone,
-            language=language
-        )
+        result = chain.invoke({
+            "topic": topic,
+            "audience": audience,
+            "tone": tone,
+            "language": language
+        })
+        
+        # Extract the content from the response
+        # The result is an AIMessage object, we need the content string
+        if hasattr(result, 'content'):
+            content = result.content
+        else:
+            content = str(result)
         
         # Return the generated content as a string
         # The result is the complete blog post ready for display/publication
-        return result.strip()
+        return content.strip()
     
     except Exception as e:
         # Catch and re-raise with more context if generation fails
@@ -129,14 +131,11 @@ def generate_blog_content(
 
 
 # ============================================================================
-# CHAIN FACTORY (FOR FUTURE EXTENSIBILITY)
-# ============================================================================
-
-def create_blog_chain(temperature: float = 0.7, max_tokens: int = 2048) -> LLMChain:
+# CHAIN FACTORY (FOR FUTURE EXTENSIBILITY):
     """
     Factory function to create a reusable blog content generation chain.
     
-    This function creates and returns a configured LLMChain that can be
+    This function creates and returns a configured chain that can be
     reused multiple times without reinitializing the LLM each time.
     Useful for batch processing or when generating multiple blog posts.
     
@@ -145,12 +144,12 @@ def create_blog_chain(temperature: float = 0.7, max_tokens: int = 2048) -> LLMCh
         max_tokens (int): Maximum tokens to generate. Default 2048.
     
     Returns:
-        LLMChain: Configured chain ready for content generation.
+        Runnable: Configured chain ready for content generation.
     
     Example:
         >>> chain = create_blog_chain(temperature=0.8)
-        >>> content1 = chain.run(topic="AI", audience="developers", ...)
-        >>> content2 = chain.run(topic="ML", audience="students", ...)
+        >>> content1 = chain.invoke({"topic": "AI", "audience": "developers", ...})
+        >>> content2 = chain.invoke({"topic": "ML", "audience": "students", ...})
     """
     # Initialize and validate the Groq LLM
     groq_llm = GroqLLM()
@@ -162,6 +161,9 @@ def create_blog_chain(temperature: float = 0.7, max_tokens: int = 2048) -> LLMCh
     
     # Get the prompt template
     prompt = get_blog_prompt()
+    
+    # Create and return the chain using LCEL
+    return prompt | llm
     
     # Create and return the chain
     return LLMChain(llm=llm, prompt=prompt, verbose=False)

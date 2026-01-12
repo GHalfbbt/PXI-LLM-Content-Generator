@@ -6,7 +6,7 @@ long-form blog content adapted to a specific topic, audience,
 tone, and language using LangChain.
 """
 
-from langchain.prompts import PromptTemplate
+from langchain_core.prompts import PromptTemplate
 
 
 # ============================================================================

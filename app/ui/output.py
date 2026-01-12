@@ -4,17 +4,20 @@ Content output rendering components for Streamlit.
 This module handles the display of generated blog content in the main
 area of the Streamlit application. It provides functions to render
 content with proper formatting and user-friendly presentation.
+Supports multiple UI languages.
 """
 
 import streamlit as st
 from typing import Optional
+
+from app.utils.i18n import get_text
 
 
 # ============================================================================
 # OUTPUT RENDERING
 # ============================================================================
 
-def render_output(content: Optional[str]) -> None:
+def render_output(content: Optional[str], ui_language: str = "English") -> None:
     """
     Render the generated blog content in the main Streamlit area.
     
@@ -30,13 +33,14 @@ def render_output(content: Optional[str]) -> None:
     Args:
         content (str, optional): The generated blog post content to display.
                                  If None or empty, nothing will be rendered.
+        ui_language (str): The UI language for translations. Default is "English".
     
     Returns:
         None: This function only renders UI components and doesn't return a value.
     
     Example:
         >>> generated_content = generate_blog_content(...)
-        >>> render_output(generated_content)
+        >>> render_output(generated_content, "Español")
     """
     # Early return if content is None or empty
     # This prevents rendering empty sections in the UI
@@ -48,10 +52,10 @@ def render_output(content: Optional[str]) -> None:
     # ========================================================================
     
     # Display a success header to indicate content generation completed
-    st.subheader("✅ Generated Blog Post")
+    st.subheader(get_text("output_header", ui_language))
     
     # Add a brief description or instruction
-    st.markdown("Your blog post has been generated successfully. You can read it below or copy it for use.")
+    st.markdown(get_text("output_description", ui_language))
     
     # Display the generated content in a text area
     # The text_area component provides:
@@ -59,10 +63,9 @@ def render_output(content: Optional[str]) -> None:
     # - Built-in copy functionality
     # - Good readability with proper text wrapping
     st.text_area(
-        label="Generated Content",
+        label=get_text("output_label", ui_language),
         value=content,
         height=500,  # Set a comfortable height for reading
-        disabled=True,  # Make read-only to prevent accidental edits
         label_visibility="collapsed",  # Hide the label since we have a subheader
         key="output_content"
     )
@@ -76,13 +79,13 @@ def render_output(content: Optional[str]) -> None:
     
     # Add a copy button hint (the text_area has built-in copy functionality)
     with col1:
-        st.caption("📋 Use the text area controls to copy")
+        st.caption(get_text("output_copy_hint", ui_language))
     
     # Display character and word count as metadata
     with col2:
         word_count = len(content.split())
         char_count = len(content)
-        st.caption(f"📊 {word_count} words · {char_count} characters")
+        st.caption(get_text("output_stats", ui_language, words=word_count, chars=char_count))
 
 
 # ============================================================================
@@ -112,7 +115,7 @@ def render_loading_state() -> None:
 # ERROR STATE RENDERING
 # ============================================================================
 
-def render_error(error_message: str) -> None:
+def render_error(error_message: str, ui_language: str = "English") -> None:
     """
     Display an error message in a user-friendly format.
     
@@ -121,6 +124,7 @@ def render_error(error_message: str) -> None:
     
     Args:
         error_message (str): The error message to display.
+        ui_language (str): The UI language for translations. Default is "English".
     
     Returns:
         None: This function only renders UI components.
@@ -129,22 +133,22 @@ def render_error(error_message: str) -> None:
         >>> try:
         ...     content = generate_blog_content(...)
         >>> except Exception as e:
-        ...     render_error(str(e))
+        ...     render_error(str(e), "Français")
     """
-    st.error("❌ Content Generation Failed")
-    st.markdown("An error occurred while generating your blog post:")
+    st.error(get_text("error_title", ui_language))
+    st.markdown(get_text("error_description", ui_language))
     st.code(error_message, language=None)
-    st.markdown("**Suggestions:**")
-    st.markdown("- Check your internet connection")
-    st.markdown("- Verify your API key is correctly set in the `.env` file")
-    st.markdown("- Try again with different parameters")
+    st.markdown(get_text("error_suggestions_title", ui_language))
+    st.markdown(get_text("error_suggestion1", ui_language))
+    st.markdown(get_text("error_suggestion2", ui_language))
+    st.markdown(get_text("error_suggestion3", ui_language))
 
 
 # ============================================================================
 # EMPTY STATE RENDERING
 # ============================================================================
 
-def render_empty_state() -> None:
+def render_empty_state(ui_language: str = "English") -> None:
     """
     Display a friendly empty state when no content has been generated yet.
     
@@ -152,12 +156,15 @@ def render_empty_state() -> None:
     or after clearing previous results. It helps users understand how to
     get started with content generation.
     
+    Args:
+        ui_language (str): The UI language for translations. Default is "English".
+    
     Returns:
         None: This function only renders UI components.
     
     Example:
         >>> if not content_generated:
-        ...     render_empty_state()
+        ...     render_empty_state("Italiano")
     """
     # Create a visually appealing empty state
     st.markdown("---")
@@ -166,10 +173,10 @@ def render_empty_state() -> None:
     col1, col2, col3 = st.columns([1, 2, 1])
     
     with col2:
-        st.markdown("### 🚀 Welcome to AI Content Generator!")
-        st.markdown("To get started:")
-        st.markdown("1. Fill in the **Topic** and **Target Audience** in the sidebar")
-        st.markdown("2. Select your preferred **Tone** and **Language**")
-        st.markdown("3. Click the **Generate Blog Post** button")
+        st.markdown(get_text("empty_welcome", ui_language))
+        st.markdown(get_text("empty_instructions", ui_language))
+        st.markdown(get_text("empty_step1", ui_language))
+        st.markdown(get_text("empty_step2", ui_language))
+        st.markdown(get_text("empty_step3", ui_language))
         st.markdown("")
-        st.info("💡 **Tip:** The more specific you are with your inputs, the better the generated content will be!")
+        st.info(get_text("empty_tip", ui_language))

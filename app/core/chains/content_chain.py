@@ -9,6 +9,7 @@ that generates blog posts based on user inputs.
 from typing import Optional
 
 from app.core.prompts.blog import get_blog_prompt
+from app.core.identity import IdentityProfile, build_identity_context
 from app.llms.factory import LLMFactory
 from app.config import settings
 
@@ -24,7 +25,8 @@ def generate_blog_content(
     language: str,
     llm_provider: str = "groq",
     temperature: Optional[float] = None,
-    max_tokens: Optional[int] = None
+    max_tokens: Optional[int] = None,
+    identity: Optional[IdentityProfile] = None
 ) -> str:
     """
     Generate blog content using LangChain with selected LLM provider.
@@ -37,9 +39,10 @@ def generate_blog_content(
     The generation process:
     1. Initialize the selected LLM provider using the factory
     2. Load the blog prompt template
-    3. Create a LangChain chain linking prompt and LLM
-    4. Execute the chain with user-provided inputs
-    5. Return the generated blog post content
+    3. Optionally inject identity context if provided
+    4. Create a LangChain chain linking prompt and LLM
+    5. Execute the chain with user-provided inputs
+    6. Return the generated blog post content
     
     Args:
         topic (str): The main subject or theme of the blog post.
@@ -57,6 +60,8 @@ def generate_blog_content(
                                       Defaults to settings.DEFAULT_TEMPERATURE (0.7).
         max_tokens (int, optional): Maximum number of tokens to generate.
                                    Defaults to settings.DEFAULT_MAX_TOKENS (2048).
+        identity (IdentityProfile, optional): Identity information to personalize content.
+                                             If provided, content reflects this identity's voice.
     
     Returns:
         str: The generated blog post content, ready for publication.
@@ -102,12 +107,26 @@ def generate_blog_content(
     # This template defines how the LLM should structure the blog post
     prompt = get_blog_prompt()
     
-    # Step 5: Create the LangChain chain using LCEL (LangChain Expression Language)
+    # Step 5: Inject identity context if provided
+    # Identity context is prepended to the prompt to personalize content
+    if identity:
+        identity_context = build_identity_context(identity)
+        # Modify the prompt template to include identity context
+        # We prepend identity to the template's template string
+        from langchain_core.prompts import PromptTemplate
+        original_template = prompt.template
+        enhanced_template = identity_context + "\n\n" + original_template
+        prompt = PromptTemplate(
+            template=enhanced_template,
+            input_variables=prompt.input_variables
+        )
+    
+    # Step 6: Create the LangChain chain using LCEL (LangChain Expression Language)
     # Modern LangChain uses the pipe operator (|) to chain components
     # This creates a pipeline: prompt -> LLM -> output parser
     chain = prompt | llm
     
-    # Step 6: Execute the chain with user inputs
+    # Step 7: Execute the chain with user inputs
     # The chain will format the prompt with the provided variables
     # and send it to the LLM for content generation
     try:

@@ -6,7 +6,10 @@ platform-specific social media posts using the adapter pattern
 and LangChain LCEL composition.
 """
 
+from typing import Optional
+
 from app.core.social.factory import SocialAdapterFactory
+from app.core.identity import IdentityProfile, build_identity_context
 from app.llms.factory import LLMFactory
 from app.config import settings
 
@@ -20,7 +23,8 @@ def generate_social_post(
     platform: str,
     llm_provider: str = "groq",
     temperature: float = None,
-    max_tokens: int = None
+    max_tokens: int = None,
+    identity: Optional[IdentityProfile] = None
 ) -> str:
     """
     Generate a platform-specific social media post from a blog article.
@@ -32,10 +36,11 @@ def generate_social_post(
     The generation process:
     1. Validate and instantiate the correct social media adapter
     2. Retrieve platform-specific prompt template
-    3. Initialize the LLM provider via factory
-    4. Create LCEL chain (prompt | llm)
-    5. Execute chain with blog content
-    6. Return the generated social post
+    3. Optionally inject identity context if provided
+    4. Initialize the LLM provider via factory
+    5. Create LCEL chain (prompt | llm)
+    6. Execute chain with blog content
+    7. Return the generated social post
     
     Args:
         blog_content: The source blog article text to transform.
@@ -50,6 +55,8 @@ def generate_social_post(
                     Defaults to settings.DEFAULT_TEMPERATURE (0.7).
         max_tokens: Maximum tokens to generate.
                    Defaults to settings.DEFAULT_MAX_TOKENS (2048).
+        identity: Identity information to personalize the social post.
+                 If provided, the post reflects this identity's voice.
     
     Returns:
         str: The generated social media post, optimized for the target platform.
@@ -85,28 +92,41 @@ def generate_social_post(
     # Each adapter provides its own optimized prompt
     prompt = adapter.get_prompt()
     
-    # Step 3: Initialize the LLM provider using the factory
+    # Step 3: Inject identity context if provided
+    # Identity context is prepended to personalize the social post
+    if identity:
+        identity_context = build_identity_context(identity)
+        # Modify the prompt template to include identity context
+        from langchain_core.prompts import PromptTemplate
+        original_template = prompt.template
+        enhanced_template = identity_context + "\n\n" + original_template
+        prompt = PromptTemplate(
+            template=enhanced_template,
+            input_variables=prompt.input_variables
+        )
+    
+    # Step 4: Initialize the LLM provider using the factory
     # The factory handles Groq/Ollama instantiation and validation
     llm_instance = LLMFactory.create_llm(llm_provider)
     
-    # Step 4: Validate that the LLM is properly configured
+    # Step 5: Validate that the LLM is properly configured
     if not llm_instance.validate():
         raise ValueError(
             f"{llm_provider.upper()} LLM is not properly configured. "
             f"Please check your environment variables and configuration."
         )
     
-    # Step 5: Get the configured LLM instance with specified parameters
+    # Step 6: Get the configured LLM instance with specified parameters
     llm = llm_instance.get_llm(
         temperature=temperature,
         max_tokens=max_tokens
     )
     
-    # Step 6: Create the LangChain chain using LCEL
+    # Step 7: Create the LangChain chain using LCEL
     # Modern LangChain uses the pipe operator (|) to chain components
     chain = prompt | llm
     
-    # Step 7: Execute the chain with the blog content
+    # Step 8: Execute the chain with the blog content
     try:
         result = chain.invoke({
             "blog_content": blog_content

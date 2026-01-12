@@ -48,6 +48,12 @@ Your task is to write a comprehensive, well-structured blog post based on the fo
 - Tone: {tone}
 - Language: {language}
 
+⚠️ CRITICAL REQUIREMENT:
+YOU MUST write the ENTIRE blog post in {language}. This is NON-NEGOTIABLE.
+- Every word, sentence, and paragraph MUST be in {language}
+- The title, headings, and all content MUST be in {language}
+- Do NOT mix languages or write in English if {language} is not English
+
 📝 WRITING GUIDELINES:
 1. Structure: Create a clear hierarchy with an introduction, well-organized body sections, and a conclusion
 2. Headings: Use descriptive headings and subheadings to organize content
@@ -56,7 +62,6 @@ Your task is to write a comprehensive, well-structured blog post based on the fo
 5. Value: Provide actionable insights, practical examples, or useful information
 6. Audience Adaptation: Adjust language complexity and terminology to match the target audience
 7. Tone Consistency: Maintain the specified tone throughout the entire post
-8. Language: Write entirely in {language}
 
 ⚠️ IMPORTANT:
 - Avoid filler content and generic statements
@@ -64,7 +69,7 @@ Your task is to write a comprehensive, well-structured blog post based on the fo
 - Start directly with the blog post content (title or introduction)
 - Ensure the content is publication-ready
 
-Now, write the blog post:"""
+Now, write the blog post IN {language}:"""
 
     # Create and return the PromptTemplate with defined input variables
     return PromptTemplate(

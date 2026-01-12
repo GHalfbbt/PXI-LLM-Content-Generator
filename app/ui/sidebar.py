@@ -192,7 +192,140 @@ def render_sidebar() -> Dict[str, Any]:
     st.sidebar.divider()
     
     # ========================================================================
-    # SECTION 4.5: LLM PROVIDER SELECTION
+    # SECTION 4.5: IDENTITY PROFILE (OPTIONAL)
+    # ========================================================================
+    st.sidebar.subheader(f"👤 {get_text('identity_header', ui_language)}")
+    
+    # Enable/disable identity personalization
+    identity_enabled = st.sidebar.checkbox(
+        label=get_text("identity_enable", ui_language),
+        value=False,
+        help=get_text("identity_enable_help", ui_language),
+        key="identity_enabled"
+    )
+    
+    # Initialize identity fields with default values
+    identity_type = None
+    identity_name = ""
+    identity_role = ""
+    identity_description = ""
+    identity_tone = ""
+    identity_values = ""
+    
+    # Show identity fields when enabled
+    if identity_enabled:
+        # Identity type selector
+        identity_type = st.sidebar.selectbox(
+            label=get_text("identity_type_label", ui_language),
+            options=[get_text("identity_type_person", ui_language), get_text("identity_type_company", ui_language)],
+            index=0,
+            help=get_text("identity_type_help", ui_language),
+            key="identity_type"
+        )
+        
+        # Name input
+        identity_name = st.sidebar.text_input(
+            label=get_text("identity_name_label", ui_language),
+            placeholder=get_text("identity_name_placeholder", ui_language),
+            help=get_text("identity_name_help", ui_language),
+            key="identity_name"
+        )
+        
+        # Role or Industry input with suggestions
+        is_person = identity_type == get_text("identity_type_person", ui_language)
+        role_label = get_text("identity_role_label", ui_language) if is_person else get_text("identity_industry_label", ui_language)
+        
+        # Show suggestions in an expander
+        if is_person:
+            with st.sidebar.expander(f"💡 {get_text('identity_role_suggestions', ui_language)}"):
+                st.caption(f"{get_text('identity_role_ceo', ui_language)} • {get_text('identity_role_marketing', ui_language)} • {get_text('identity_role_engineer', ui_language)} • {get_text('identity_role_scientist', ui_language)} • {get_text('identity_role_product', ui_language)} • {get_text('identity_role_designer', ui_language)} • {get_text('identity_role_writer', ui_language)}")
+        else:
+            with st.sidebar.expander(f"💡 {get_text('identity_industry_suggestions', ui_language)}"):
+                st.caption(f"{get_text('identity_industry_tech', ui_language)} • {get_text('identity_industry_fintech', ui_language)} • {get_text('identity_industry_health', ui_language)} • {get_text('identity_industry_ecommerce', ui_language)} • {get_text('identity_industry_marketing', ui_language)} • {get_text('identity_industry_consulting', ui_language)} • {get_text('identity_industry_education', ui_language)}")
+        
+        identity_role = st.sidebar.text_input(
+            label=role_label,
+            placeholder=get_text("identity_role_placeholder_person", ui_language) if is_person else get_text("identity_role_placeholder_company", ui_language),
+            help=get_text("identity_role_help_person", ui_language) if is_person else get_text("identity_role_help_company", ui_language),
+            key="identity_role"
+        )
+        
+        # Description text area
+        description_label = get_text("identity_background_label", ui_language) if is_person else get_text("identity_about_label", ui_language)
+        
+        identity_description = st.sidebar.text_area(
+            label=description_label,
+            placeholder=get_text("identity_background_placeholder", ui_language) if is_person else get_text("identity_about_placeholder", ui_language),
+            help=get_text("identity_background_help", ui_language),
+            height=100,
+            key="identity_description"
+        )
+        
+        # Optional: Tone of voice with dropdown + custom option
+        tone_options = [
+            get_text("identity_tone_formal", ui_language),
+            get_text("identity_tone_approachable", ui_language),
+            get_text("identity_tone_conversational", ui_language),
+            get_text("identity_tone_technical", ui_language),
+            get_text("identity_tone_inspiring", ui_language),
+            get_text("identity_tone_empathetic", ui_language),
+            get_text("identity_tone_innovative", ui_language),
+            get_text("identity_custom", ui_language)
+        ]
+        
+        tone_selection = st.sidebar.selectbox(
+            label=get_text("identity_tone_label", ui_language),
+            options=[""] + tone_options,  # Empty string for "no selection"
+            format_func=lambda x: get_text("identity_select_placeholder", ui_language) if x == "" else x,
+            help=get_text("identity_tone_help", ui_language),
+            key="identity_tone_select"
+        )
+        
+        # If custom selected or no selection, show text input
+        if tone_selection == get_text("identity_custom", ui_language) or tone_selection == "":
+            identity_tone = st.sidebar.text_input(
+                label=get_text("identity_tone_custom_label", ui_language) if tone_selection == get_text("identity_custom", ui_language) else get_text("identity_tone_custom_placeholder", ui_language),
+                placeholder="e.g., witty and educational",
+                key="identity_tone_custom"
+            )
+        else:
+            identity_tone = tone_selection
+        
+        # Optional: Core values with dropdown + custom option
+        values_options = [
+            get_text("identity_values_innovation", ui_language),
+            get_text("identity_values_customer", ui_language),
+            get_text("identity_values_sustainability", ui_language),
+            get_text("identity_values_excellence", ui_language),
+            get_text("identity_values_creativity", ui_language),
+            get_text("identity_values_trust", ui_language),
+            get_text("identity_values_diversity", ui_language),
+            get_text("identity_custom", ui_language)
+        ]
+        
+        values_selection = st.sidebar.selectbox(
+            label=get_text("identity_values_label", ui_language),
+            options=[""] + values_options,  # Empty string for "no selection"
+            format_func=lambda x: get_text("identity_select_placeholder", ui_language) if x == "" else x,
+            help=get_text("identity_values_help", ui_language),
+            key="identity_values_select"
+        )
+        
+        # If custom selected or no selection, show text input
+        if values_selection == get_text("identity_custom", ui_language) or values_selection == "":
+            identity_values = st.sidebar.text_input(
+                label=get_text("identity_values_custom_label", ui_language) if values_selection == get_text("identity_custom", ui_language) else get_text("identity_values_custom_placeholder", ui_language),
+                placeholder="e.g., speed, simplicity, customer focus",
+                key="identity_values_custom"
+            )
+        else:
+            identity_values = values_selection
+    
+    # Add spacing
+    st.sidebar.divider()
+    
+    # ========================================================================
+    # SECTION 5: LLM PROVIDER SELECTION
     # ========================================================================
     st.sidebar.subheader(get_text("provider_header", ui_language))
     
@@ -250,7 +383,15 @@ def render_sidebar() -> Dict[str, Any]:
         "tone": tone,
         "language": language,
         "llm_provider": llm_provider,
-        "generate_clicked": generate_clicked
+        "generate_clicked": generate_clicked,
+        # Identity profile fields
+        "identity_enabled": identity_enabled,
+        "identity_type": identity_type,
+        "identity_name": identity_name,
+        "identity_role": identity_role,
+        "identity_description": identity_description,
+        "identity_tone": identity_tone,
+        "identity_values": identity_values
     }
 
 

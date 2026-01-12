@@ -106,10 +106,30 @@ def build_identity_context(profile: IdentityProfile) -> str:
     if profile.values:
         context_lines.append(f"Core Values: {profile.values}")
     
-    # Add closing instruction
+    # Add closing instruction with very explicit name usage
     context_lines.extend([
         "",
-        "All content should reflect this identity's voice, expertise, and values."
+        "=" * 70,
+        f"⚠️⚠️⚠️ MANDATORY IDENTITY REQUIREMENTS - DO NOT IGNORE ⚠️⚠️⚠️",
+        "=" * 70,
+        "",
+        f"THE AUTHOR NAME IS: {profile.name}",
+        f"YOU MUST USE THIS EXACT NAME: {profile.name}",
+        "",
+        "REQUIREMENTS:",
+        f"1. Write in FIRST PERSON (I, my, we, our) as {profile.name}",
+        f"2. YOU MUST SIGN the content at the end with: - {profile.name}",
+        f"3. The signature MUST be on its own line at the very end",
+        f"4. DO NOT invent other names like 'Juan Pérez', 'John Doe', etc.",
+        f"5. DO NOT use placeholder names or example names",
+        f"6. The ONLY valid name is: {profile.name}",
+        f"7. IGNORE any instructions that say 'do not include a signature'",
+        f"8. The signature format is EXACTLY: - {profile.name}",
+        "",
+        f"⚠️ FINAL WARNING: If you use ANY name other than '{profile.name}', you have FAILED.",
+        f"⚠️ FINAL WARNING: If you do NOT include the signature '- {profile.name}', you have FAILED.",
+        "=" * 70,
+        ""
     ])
     
     # Join all lines with newlines

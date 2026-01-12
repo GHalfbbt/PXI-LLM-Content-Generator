@@ -367,7 +367,8 @@ def main() -> None:
                     topic=inputs["topic"],
                     audience=inputs["audience"],
                     tone=inputs["tone"],
-                    language=inputs["language"]
+                    language=inputs["language"],
+                    llm_provider=inputs["llm_provider"]
                 )
                 
                 # ============================================================
@@ -384,14 +385,37 @@ def main() -> None:
                 # Render the generated content
                 render_output(generated_content, ui_language)
             
-            except Exception as e:
+            except ValueError as ve:
                 # ============================================================
-                # ERROR STATE
+                # CONFIGURATION ERROR (LLM not available/configured)
                 # ============================================================
                 
-                # Display user-friendly error message
-                # Avoid exposing technical details that might confuse users
-                render_error(str(e), ui_language)
+                render_error(str(ve), ui_language)
+            
+            except Exception as e:
+                # ============================================================
+                # RUNTIME ERROR (Connectivity, model issues, etc.)
+                # ============================================================
+                
+                error_msg = str(e).lower()
+                
+                # Detect Ollama-specific errors
+                if inputs["llm_provider"] == "ollama" and any(
+                    keyword in error_msg for keyword in [
+                        "connection refused",
+                        "connection error",
+                        "failed to connect",
+                        "could not connect",
+                        "ollama",
+                        "localhost:11434",
+                        "connect econnrefused"
+                    ]
+                ):
+                    st.error(get_text("ollama_error", ui_language))
+                    st.info(get_text("ollama_help", ui_language))
+                else:
+                    # Generic error handling
+                    render_error(str(e), ui_language)
     
     else:
         # ====================================================================

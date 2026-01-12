@@ -19,6 +19,7 @@ from app.ui.output import (
 
 # Import content generation functionality
 from app.core.chains.content_chain import generate_blog_content
+from app.core.chains.social_chain import generate_social_post
 
 # Import configuration for validation
 from app.config import settings
@@ -329,6 +330,39 @@ def main() -> None:
     # Optionally render sidebar footer with tips
     render_sidebar_footer(ui_language)
     
+    # TABBED INTERFACE - BLOG & SOCIAL MEDIA
+    # ========================================================================
+    
+    # Create tabs for blog and social media content
+    tab_blog, tab_social = st.tabs(["📝 Blog Content", "📣 Social Media"])
+    
+    # ========================================================================
+    # TAB 1: BLOG CONTENT GENERATION
+    # ========================================================================
+    
+    with tab_blog:
+        render_blog_generation_ui(inputs, ui_language)
+    
+    # ========================================================================
+    # TAB 2: SOCIAL MEDIA GENERATION
+    # ========================================================================
+    
+    with tab_social:
+        render_social_media_ui(inputs, ui_language)
+
+
+def render_blog_generation_ui(inputs: dict, ui_language: str) -> None:
+    """
+    Render the blog content generation UI.
+    
+    This function handles the blog generation workflow including
+    validation, generation, and output display.
+    
+    Args:
+        inputs: Dictionary containing user inputs from sidebar.
+        ui_language: Selected UI language for translations.
+    """
+    # ========================================================================
     # ========================================================================
     # STATE MANAGEMENT & CONTENT GENERATION
     # ========================================================================
@@ -432,6 +466,172 @@ def main() -> None:
             # No content has been generated yet
             # Display a friendly empty state with instructions
             render_empty_state(ui_language)
+
+
+def render_social_media_ui(inputs: dict, ui_language: str) -> None:
+    """
+    Render the social media content generation UI.
+    
+    This function allows users to transform existing blog content
+    into platform-specific social media posts.
+    
+    Args:
+        inputs: Dictionary containing user inputs from sidebar.
+        ui_language: Selected UI language for translations.
+    """
+    # ========================================================================
+    # CHECK FOR EXISTING BLOG CONTENT
+    # ========================================================================
+    
+    # Social media generation requires a blog post as source
+    if "last_generated_content" not in st.session_state:
+        # Display empty state with instructions
+        st.info("📝 Generate a blog post first to create social media content.")
+        st.markdown("""
+        ### How to get started:
+        1. Switch to the **Blog Content** tab
+        2. Fill in the topic and audience fields
+        3. Click **Generate Blog Article**
+        4. Return here to create social media posts
+        """)
+        return
+    
+    # ========================================================================
+    # SOCIAL MEDIA CONFIGURATION
+    # ========================================================================
+    
+    st.markdown("### 🎯 Social Media Post Generator")
+    st.markdown("Transform your blog content into platform-optimized social posts.")
+    
+    # Platform selection
+    col1, col2 = st.columns([2, 1])
+    
+    with col1:
+        selected_platforms = st.multiselect(
+            "📱 Select Platforms",
+            options=["linkedin", "twitter", "instagram"],
+            default=["linkedin"],
+            help="Choose which social media platforms to generate content for"
+        )
+    
+    with col2:
+        # LLM provider selection for social posts
+        social_llm_provider = st.selectbox(
+            "🤖 LLM Provider",
+            options=["groq", "ollama"],
+            index=0,
+            help="Select the LLM provider for social content generation"
+        )
+    
+    # Generate button
+    generate_social = st.button(
+        "🚀 Generate Social Posts",
+        type="primary",
+        use_container_width=True,
+        disabled=len(selected_platforms) == 0
+    )
+    
+    # ========================================================================
+    # SOCIAL POST GENERATION
+    # ========================================================================
+    
+    if generate_social:
+        if not selected_platforms:
+            st.warning("⚠️ Please select at least one platform.")
+            return
+        
+        # Get blog content from session state
+        blog_content = st.session_state["last_generated_content"]
+        
+        # Display progress
+        with st.spinner(f"🤖 Generating posts for {len(selected_platforms)} platform(s)..."):
+            # Store results in session state
+            if "social_posts" not in st.session_state:
+                st.session_state["social_posts"] = {}
+            
+            # Generate posts for each platform
+            for platform in selected_platforms:
+                try:
+                    # Generate platform-specific post
+                    social_post = generate_social_post(
+                        blog_content=blog_content,
+                        platform=platform,
+                        llm_provider=social_llm_provider
+                    )
+                    
+                    # Store successful result
+                    st.session_state["social_posts"][platform] = {
+                        "content": social_post,
+                        "status": "success",
+                        "provider": social_llm_provider
+                    }
+                    
+                except Exception as e:
+                    # Store error for this platform
+                    st.session_state["social_posts"][platform] = {
+                        "content": None,
+                        "status": "error",
+                        "error": str(e),
+                        "provider": social_llm_provider
+                    }
+        
+        # Show completion message
+        successful = sum(
+            1 for p in st.session_state["social_posts"].values()
+            if p["status"] == "success"
+        )
+        st.success(f"✅ Generated {successful}/{len(selected_platforms)} social posts successfully!")
+    
+    # ========================================================================
+    # DISPLAY SOCIAL POSTS
+    # ========================================================================
+    
+    # Display results if they exist
+    if "social_posts" in st.session_state and st.session_state["social_posts"]:
+        st.markdown("---")
+        st.markdown("### 📤 Generated Social Posts")
+        
+        # Platform emojis and names
+        platform_info = {
+            "linkedin": {"emoji": "💼", "name": "LinkedIn", "color": "#0077B5"},
+            "twitter": {"emoji": "🐦", "name": "Twitter", "color": "#1DA1F2"},
+            "instagram": {"emoji": "📸", "name": "Instagram", "color": "#E4405F"}
+        }
+        
+        # Display each platform's result
+        for platform, result in st.session_state["social_posts"].items():
+            info = platform_info.get(platform, {"emoji": "📱", "name": platform.capitalize()})
+            
+            # Platform header
+            st.markdown(f"#### {info['emoji']} {info['name']}")
+            
+            if result["status"] == "success":
+                # Success - display the post
+                content = result["content"]
+                char_count = len(content)
+                
+                # Show character count with color coding
+                if platform == "twitter" and char_count > 280:
+                    st.warning(f"⚠️ {char_count} characters (exceeds Twitter limit of 280)")
+                else:
+                    st.caption(f"✓ {char_count} characters · Generated with {result['provider'].upper()}")
+                
+                # Display content in text area for easy copying
+                st.text_area(
+                    label=f"{info['name']} Post",
+                    value=content,
+                    height=200,
+                    key=f"social_output_{platform}",
+                    label_visibility="collapsed"
+                )
+                
+            else:
+                # Error - display error message
+                st.error(f"❌ Failed to generate {info['name']} post")
+                with st.expander("View Error Details"):
+                    st.code(result.get("error", "Unknown error"))
+            
+            st.markdown("")  # Spacing
 
 
 # ============================================================================

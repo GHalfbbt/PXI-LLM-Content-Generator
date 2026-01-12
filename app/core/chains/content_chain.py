@@ -10,6 +10,7 @@ from typing import Optional
 
 from app.core.prompts.blog import get_blog_prompt
 from app.core.identity import IdentityProfile, build_identity_context
+from app.core.styles import StyleFactory
 from app.llms.factory import LLMFactory
 from app.config import settings
 
@@ -26,7 +27,8 @@ def generate_blog_content(
     llm_provider: str = "groq",
     temperature: Optional[float] = None,
     max_tokens: Optional[int] = None,
-    identity: Optional[IdentityProfile] = None
+    identity: Optional[IdentityProfile] = None,
+    style: str = "default"
 ) -> str:
     """
     Generate blog content using LangChain with selected LLM provider.
@@ -61,6 +63,9 @@ def generate_blog_content(
         max_tokens (int, optional): Maximum number of tokens to generate.
                                    Defaults to settings.DEFAULT_MAX_TOKENS (2048).
         identity (IdentityProfile, optional): Identity information to personalize content.
+        style (str, optional): Content writing style to apply.
+                              Options: "default", "seo", "divulgative", "kids".
+                              Defaults to "default" (no style modification).
                                              If provided, content reflects this identity's voice.
     
     Returns:
@@ -104,22 +109,42 @@ def generate_blog_content(
     )
     
     # Step 4: Load the blog prompt template
-    # This template defines how the LLM should structure the blog post
+    # This template defines the structure and requirements for blog generation
     prompt = get_blog_prompt()
     
-    # Step 5: Inject identity context if provided
-    # Identity context is prepended to the prompt to personalize content
+    # Step 5: Build the complete prompt with optional enhancements
+    # The injection order is: Identity (if provided) -> Style (if not default) -> Base prompt
+    template_parts = []
+    
+    # First: Add identity context if provided (highest priority)
     if identity:
         identity_context = build_identity_context(identity)
-        # Modify the prompt template to include identity context
-        # We prepend identity to the template's template string
-        from langchain_core.prompts import PromptTemplate
-        original_template = prompt.template
-        enhanced_template = identity_context + "\n\n" + original_template
-        prompt = PromptTemplate(
-            template=enhanced_template,
-            input_variables=prompt.input_variables
-        )
+        template_parts.append(identity_context)
+    
+    # Second: Add style instruction if not default
+    if style != "default":
+        try:
+            style_instance = StyleFactory.create_style(style)
+            style_instruction = style_instance.get_instruction()
+            if style_instruction:  # Only add if non-empty
+                template_parts.append(style_instruction)
+        except ValueError as e:
+            # If invalid style, log warning but continue with default
+            # This prevents breaking generation due to invalid style
+            print(f"Warning: {str(e)}. Using default style.")
+    
+    # Third: Add the base prompt template
+    template_parts.append(prompt.template)
+    
+    # Combine all parts with double newlines for clear separation
+    enhanced_template = "\n\n".join(template_parts)
+    
+    # Create new prompt with enhanced template
+    from langchain_core.prompts import PromptTemplate
+    prompt = PromptTemplate(
+        template=enhanced_template,
+        input_variables=prompt.input_variables
+    )
     
     # Step 6: Create the LangChain chain using LCEL (LangChain Expression Language)
     # Modern LangChain uses the pipe operator (|) to chain components

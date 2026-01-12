@@ -39,6 +39,12 @@ Your task is to transform the following blog article into a captivating Instagra
 BLOG ARTICLE:
 {blog_content}
 
+⚠️ CRITICAL REQUIREMENT - LANGUAGE:
+YOU MUST write the ENTIRE Instagram caption in {language}. This is NON-NEGOTIABLE.
+- Every word, hashtag, and emoji description MUST be in {language}
+- Do NOT write in English if {language} is not English
+- Maintain natural, native-speaker fluency in {language}
+
 INSTAGRAM CAPTION REQUIREMENTS:
 1. Emotional and storytelling tone - make people feel something
 2. Maximum ~2,200 characters (Instagram limit)
@@ -46,10 +52,17 @@ INSTAGRAM CAPTION REQUIREMENTS:
 4. Use relevant emojis naturally throughout (2-4 emojis)
 5. Tell a micro-story or share a compelling insight
 6. Use line breaks for mobile readability (short paragraphs)
-7. Include 5-10 relevant hashtags grouped at the end
-8. End with a strong call-to-action (question, challenge, or invitation)
+7. Include 5-10 relevant hashtags grouped at the end (in {language})
+8. End with a strong call-to-action (question, challenge, or invitation) in {language}
 9. Conversational and authentic voice
 10. Maintain the blog's core message while adding emotional depth
+
+⚠️ CRITICAL - AUTHOR IDENTITY:
+- If an author name is provided in the identity context above, YOU MUST use that EXACT name
+- Sign the caption with the provided name naturally
+- DO NOT invent names like "Juan Pérez", "María López", "John Doe", or any placeholder names
+- DO NOT make up author names - only use the name explicitly provided
+- If no name is provided, do not include a signature
 
 CAPTION STRUCTURE:
 - Hook (1-2 sentences with emoji)
@@ -63,6 +76,6 @@ OUTPUT FORMAT:
 - Do not add "Here's the caption" or similar phrases
 - Just the caption content itself
 
-Generate the Instagram caption now:"""
+Generate the Instagram caption now IN {language}:"""
     
     return PromptTemplate.from_template(template)

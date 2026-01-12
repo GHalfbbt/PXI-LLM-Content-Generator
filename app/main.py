@@ -21,6 +21,9 @@ from app.ui.output import (
 from app.core.chains.content_chain import generate_blog_content
 from app.core.chains.social_chain import generate_social_post
 
+# Import identity profile for personalization
+from app.core.identity import IdentityProfile
+
 # Import configuration for validation
 from app.config import settings
 
@@ -320,6 +323,72 @@ def main() -> None:
     ui_language = inputs.get("ui_language", "English")
     
     # ========================================================================
+    # IDENTITY PROFILE CREATION
+    # ========================================================================
+    
+    # Create identity profile if enabled and valid
+    identity = None
+    
+    if inputs.get("identity_enabled", False):
+        # Validate required identity fields
+        identity_name = inputs.get("identity_name", "").strip()
+        identity_role = inputs.get("identity_role", "").strip()
+        identity_description = inputs.get("identity_description", "").strip()
+        
+        if identity_name and identity_role and identity_description:
+            try:
+                # Map translated type back to English for internal use
+                type_mapping = {
+                    get_text("identity_type_person", inputs["ui_language"]): "person",
+                    get_text("identity_type_company", inputs["ui_language"]): "company"
+                }
+                identity_type_internal = type_mapping.get(inputs.get("identity_type", ""), "person")
+                
+                # Create IdentityProfile instance
+                identity = IdentityProfile(
+                    type=identity_type_internal,  # "person" or "company"
+                    name=identity_name,
+                    role_or_industry=identity_role,
+                    description=identity_description,
+                    tone=inputs.get("identity_tone", "").strip() or None,
+                    values=inputs.get("identity_values", "").strip() or None
+                )
+                
+                # Check if identity has changed - if so, clear previous content
+                old_identity = st.session_state.get("identity_profile")
+                if old_identity and (
+                    old_identity.name != identity.name or
+                    old_identity.type != identity.type or
+                    old_identity.role_or_industry != identity.role_or_industry
+                ):
+                    st.sidebar.info(f"🔄 Identity changed: {old_identity.name} → {identity.name}")
+                    # Clear previous content since identity changed
+                    if "last_generated_content" in st.session_state:
+                        del st.session_state["last_generated_content"]
+                    if "social_posts" in st.session_state:
+                        del st.session_state["social_posts"]
+                
+                # Store in session state for persistence
+                st.session_state["identity_profile"] = identity
+                
+            except ValueError as e:
+                # Display validation error to user
+                st.sidebar.error(f"❌ Identity validation error: {str(e)}")
+                identity = None
+        elif identity_name or identity_role or identity_description:
+            # Partial input - show warning
+            st.sidebar.warning("⚠️ Please fill in all required identity fields (Name, Role/Industry, Description)")
+    else:
+        # Identity disabled - clear from session state
+        if "identity_profile" in st.session_state:
+            del st.session_state["identity_profile"]
+    
+    # Add identity to inputs for passing to render functions
+    inputs["identity"] = identity
+    # Add identity to inputs for passing to render functions
+    inputs["identity"] = identity
+    
+    # ========================================================================
     # HEADER SECTION
     # ========================================================================
     
@@ -334,7 +403,10 @@ def main() -> None:
     # ========================================================================
     
     # Create tabs for blog and social media content
-    tab_blog, tab_social = st.tabs(["📝 Blog Content", "📣 Social Media"])
+    tab_blog, tab_social = st.tabs([
+        get_text("tab_blog", ui_language),
+        get_text("tab_social", ui_language)
+    ])
     
     # ========================================================================
     # TAB 1: BLOG CONTENT GENERATION
@@ -402,7 +474,8 @@ def render_blog_generation_ui(inputs: dict, ui_language: str) -> None:
                     audience=inputs["audience"],
                     tone=inputs["tone"],
                     language=inputs["language"],
-                    llm_provider=inputs["llm_provider"]
+                    llm_provider=inputs["llm_provider"],
+                    identity=inputs.get("identity")  # Pass identity if available
                 )
                 
                 # ============================================================
@@ -486,13 +559,12 @@ def render_social_media_ui(inputs: dict, ui_language: str) -> None:
     # Social media generation requires a blog post as source
     if "last_generated_content" not in st.session_state:
         # Display empty state with instructions
-        st.info("📝 Generate a blog post first to create social media content.")
-        st.markdown("""
-        ### How to get started:
-        1. Switch to the **Blog Content** tab
-        2. Fill in the topic and audience fields
-        3. Click **Generate Blog Article**
-        4. Return here to create social media posts
+        st.info(f"📝 {get_text('social_no_content', ui_language)}")
+        st.markdown(f"""
+        ### {get_text('social_subtitle', ui_language).replace('.', ':')}
+        {get_text('social_instruction_1', ui_language)}
+        {get_text('social_instruction_2', ui_language)}
+        {get_text('social_instruction_3', ui_language)}
         """)
         return
     
@@ -500,15 +572,15 @@ def render_social_media_ui(inputs: dict, ui_language: str) -> None:
     # SOCIAL MEDIA CONFIGURATION
     # ========================================================================
     
-    st.markdown("### 🎯 Social Media Post Generator")
-    st.markdown("Transform your blog content into platform-optimized social posts.")
+    st.markdown(f"### {get_text('social_title', ui_language)}")
+    st.markdown(get_text('social_subtitle', ui_language))
     
     # Platform selection
     col1, col2 = st.columns([2, 1])
     
     with col1:
         selected_platforms = st.multiselect(
-            "📱 Select Platforms",
+            f"📱 {get_text('social_platform_label', ui_language)}",
             options=["linkedin", "twitter", "instagram"],
             default=["linkedin"],
             help="Choose which social media platforms to generate content for"
@@ -543,11 +615,13 @@ def render_social_media_ui(inputs: dict, ui_language: str) -> None:
         # Get blog content from session state
         blog_content = st.session_state["last_generated_content"]
         
+        # Get identity if available
+        identity_obj = inputs.get("identity")
+        
         # Display progress
         with st.spinner(f"🤖 Generating posts for {len(selected_platforms)} platform(s)..."):
-            # Store results in session state
-            if "social_posts" not in st.session_state:
-                st.session_state["social_posts"] = {}
+            # Clear previous results and generate fresh posts
+            st.session_state["social_posts"] = {}
             
             # Generate posts for each platform
             for platform in selected_platforms:
@@ -556,7 +630,9 @@ def render_social_media_ui(inputs: dict, ui_language: str) -> None:
                     social_post = generate_social_post(
                         blog_content=blog_content,
                         platform=platform,
-                        llm_provider=social_llm_provider
+                        language=inputs["language"],  # Pass the content language
+                        llm_provider=social_llm_provider,
+                        identity=identity_obj  # Pass identity if available
                     )
                     
                     # Store successful result

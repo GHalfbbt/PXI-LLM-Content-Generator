@@ -21,6 +21,7 @@ from app.config import settings
 def generate_social_post(
     blog_content: str,
     platform: str,
+    language: str = "English",
     llm_provider: str = "groq",
     temperature: float = None,
     max_tokens: int = None,
@@ -39,7 +40,7 @@ def generate_social_post(
     3. Optionally inject identity context if provided
     4. Initialize the LLM provider via factory
     5. Create LCEL chain (prompt | llm)
-    6. Execute chain with blog content
+    6. Execute chain with blog content and language
     7. Return the generated social post
     
     Args:
@@ -49,6 +50,9 @@ def generate_social_post(
                  - "linkedin": Professional networking
                  - "twitter": Microblogging (280 chars)
                  - "instagram": Visual storytelling
+        language: Language in which to generate the social post.
+                 Should match the blog content language for consistency.
+                 Defaults to "English".
         llm_provider: LLM provider to use ("groq" or "ollama").
                      Defaults to "groq" for cloud-based generation.
         temperature: Controls randomness in generation (0.0-1.0).
@@ -70,10 +74,11 @@ def generate_social_post(
         >>> linkedin_post = generate_social_post(
         ...     blog_content=blog,
         ...     platform="linkedin",
+        ...     language="Spanish",
         ...     llm_provider="groq"
         ... )
         >>> print(linkedin_post)
-        "🚀 AI is revolutionizing how we work..."
+        "🚀 La IA está revolucionando cómo trabajamos..."
     """
     # Use default values from settings if not provided
     if temperature is None:
@@ -96,13 +101,22 @@ def generate_social_post(
     # Identity context is prepended to personalize the social post
     if identity:
         identity_context = build_identity_context(identity)
+        
         # Modify the prompt template to include identity context
         from langchain_core.prompts import PromptTemplate
         original_template = prompt.template
         enhanced_template = identity_context + "\n\n" + original_template
+        # Ensure input_variables includes both blog_content and language
         prompt = PromptTemplate(
             template=enhanced_template,
-            input_variables=prompt.input_variables
+            input_variables=["blog_content", "language"]
+        )
+    else:
+        # No identity - but still need to ensure correct input_variables
+        from langchain_core.prompts import PromptTemplate
+        prompt = PromptTemplate(
+            template=prompt.template,
+            input_variables=["blog_content", "language"]
         )
     
     # Step 4: Initialize the LLM provider using the factory
@@ -126,10 +140,11 @@ def generate_social_post(
     # Modern LangChain uses the pipe operator (|) to chain components
     chain = prompt | llm
     
-    # Step 8: Execute the chain with the blog content
+    # Step 8: Execute the chain with the blog content and language
     try:
         result = chain.invoke({
-            "blog_content": blog_content
+            "blog_content": blog_content,
+            "language": language
         })
         
         # Extract the content from the response

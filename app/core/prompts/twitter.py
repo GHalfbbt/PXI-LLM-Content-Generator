@@ -39,11 +39,17 @@ Your task is to transform the following blog article into a compelling Twitter p
 BLOG ARTICLE:
 {blog_content}
 
+⚠️ CRITICAL REQUIREMENT - LANGUAGE:
+YOU MUST write the ENTIRE tweet in {language}. This is NON-NEGOTIABLE.
+- Every word and hashtag MUST be in {language}
+- Do NOT write in English if {language} is not English
+- Maintain natural, native-speaker fluency in {language}
+
 TWITTER POST REQUIREMENTS:
 1. Maximum length: 280 characters (STRICT LIMIT - count every character)
 2. Start with a powerful hook that demands attention
 3. Distill the blog's core insight into one punchy statement
-4. Use 1-2 relevant hashtags maximum (include in character count)
+4. Use 1-2 relevant hashtags maximum (include in character count, in {language})
 5. No emojis unless absolutely necessary for context
 6. Every word must add value - be ruthlessly concise
 7. Can use line breaks for impact if needed
@@ -63,6 +69,6 @@ OUTPUT FORMAT:
 - Do not add "Here's the tweet" or similar phrases
 - Just the tweet content itself
 
-Generate the Twitter post now:"""
+Generate the Twitter post now IN {language}:"""
     
     return PromptTemplate.from_template(template)

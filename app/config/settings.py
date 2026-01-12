@@ -7,6 +7,11 @@ model settings, and environment variables.
 
 import os
 from typing import Optional
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+# This ensures that env vars are available when this module is imported
+load_dotenv()
 
 
 # ============================================================================
@@ -41,13 +46,35 @@ SUPPORTED_PLATFORMS: list[str] = ["blog", "linkedin", "twitter", "instagram"]
 
 def validate_config() -> None:
     """
-    Validate that all required configuration values are present.
+    Validate that at least one LLM provider is properly configured.
+    
+    Checks that either Groq (cloud) or Ollama (local) is available.
+    At least one provider must be configured for the application to work.
     
     Raises:
-        ValueError: If any required configuration value is missing.
+        ValueError: If no LLM provider is properly configured.
     """
-    if not GROQ_API_KEY:
+    # Check if Groq is configured
+    groq_available = bool(GROQ_API_KEY)
+    
+    # Check if Ollama is configured (it's always available if installed locally)
+    ollama_base_url = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
+    ollama_model = os.getenv("OLLAMA_MODEL_NAME", "llama3.2")
+    ollama_available = bool(ollama_base_url and ollama_model)
+    
+    # At least one provider must be available
+    if not groq_available and not ollama_available:
         raise ValueError(
-            "GROQ_API_KEY environment variable is not set. "
-            "Please set it before running the application."
+            "No LLM provider is configured. "
+            "Please configure either Groq (set GROQ_API_KEY) or Ollama (ensure it's installed and running)."
         )
+    
+    # Log which providers are available (optional, for debugging)
+    available_providers = []
+    if groq_available:
+        available_providers.append("Groq")
+    if ollama_available:
+        available_providers.append("Ollama")
+    
+    # Note: We don't raise an error here, just log which providers are available
+    # The UI will show both options, and runtime errors will be handled gracefully

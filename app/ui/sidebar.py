@@ -192,6 +192,37 @@ def render_sidebar() -> Dict[str, Any]:
     st.sidebar.divider()
     
     # ========================================================================
+    # SECTION 4.5: LLM PROVIDER SELECTION
+    # ========================================================================
+    st.sidebar.subheader(get_text("provider_header", ui_language))
+    
+    # Provider options with clear labels
+    provider_options = {
+        "groq": get_text("provider_groq", ui_language),
+        "ollama": get_text("provider_ollama", ui_language)
+    }
+    
+    # Get display labels for the selectbox
+    provider_display_options = list(provider_options.values())
+    
+    # Create reverse mapping for getting the key from display value
+    display_to_key = {v: k for k, v in provider_options.items()}
+    
+    provider_display = st.sidebar.selectbox(
+        label=get_text("provider_label", ui_language),
+        options=provider_display_options,
+        index=0,  # Default to Groq (Cloud)
+        help=get_text("provider_help", ui_language),
+        key="provider_select"
+    )
+    
+    # Map displayed provider back to internal key
+    llm_provider = display_to_key.get(provider_display, "groq")
+    
+    # Add spacing before the generate button
+    st.sidebar.divider()
+    
+    # ========================================================================
     # SECTION 5: GENERATION CONTROLS
     # ========================================================================
     st.sidebar.subheader(get_text("generate_header", ui_language))
@@ -218,6 +249,7 @@ def render_sidebar() -> Dict[str, Any]:
         "audience": audience,
         "tone": tone,
         "language": language,
+        "llm_provider": llm_provider,
         "generate_clicked": generate_clicked
     }
 

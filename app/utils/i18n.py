@@ -60,6 +60,13 @@ TRANSLATIONS: Dict[str, Dict[str, str]] = {
         "lang_french": "French",
         "lang_italian": "Italian",
         
+        # LLM Provider section
+        "provider_header": "🤖 LLM Provider",
+        "provider_label": "Select Provider",
+        "provider_help": "Choose between cloud (Groq) or local (Ollama) LLM",
+        "provider_groq": "Groq (Cloud)",
+        "provider_ollama": "Ollama (Local)",
+        
         # Generate section
         "generate_header": "🚀 Generate",
         "generate_note": "⚠️ Make sure to fill in the topic and audience fields",
@@ -81,6 +88,10 @@ TRANSLATIONS: Dict[str, Dict[str, str]] = {
         "output_stats": "📊 {words} words · {chars} characters",
         "success_message": "✅ Blog post generated successfully!",
         "previous_content_info": "ℹ️ Showing previously generated content. Modify inputs and click Generate to create new content.",
+        
+        # Error messages
+        "ollama_error": "⚠️ Ollama is not available. Please make sure Ollama is running.",
+        "ollama_help": "💡 To use Ollama: 1) Install from https://ollama.ai 2) Run 'ollama serve' 3) Pull a model with 'ollama pull llama3.2'",
         
         # Empty state
         "empty_welcome": "### 🚀 Welcome to AI Content Generator!",
@@ -144,6 +155,13 @@ TRANSLATIONS: Dict[str, Dict[str, str]] = {
         "lang_spanish": "Español",
         "lang_french": "Francés",
         
+        # LLM Provider section
+        "provider_header": "🤖 Proveedor LLM",
+        "provider_label": "Seleccionar Proveedor",
+        "provider_help": "Elige entre nube (Groq) o local (Ollama)",
+        "provider_groq": "Groq (Nube)",
+        "provider_ollama": "Ollama (Local)",
+        
         # Generate section
         "generate_header": "🚀 Generar",
         "generate_note": "⚠️ Asegúrate de completar los campos de tema y audiencia",
@@ -163,6 +181,10 @@ TRANSLATIONS: Dict[str, Dict[str, str]] = {
         "output_stats": "📊 {words} palabras · {chars} caracteres",
         "success_message": "✅ ¡Artículo de blog generado exitosamente!",
         "previous_content_info": "ℹ️ Mostrando contenido generado previamente. Modifica los parámetros y haz clic en Generar para crear contenido nuevo.",
+        
+        # Error messages
+        "ollama_error": "⚠️ Ollama no está disponible. Asegúrate de que Ollama esté ejecutándose.",
+        "ollama_help": "💡 Para usar Ollama: 1) Instalar desde https://ollama.ai 2) Ejecutar 'ollama serve' 3) Descargar un modelo con 'ollama pull llama3.2'",
         
         # Empty state
         "empty_welcome": "### 🚀 ¡Bienvenido al Generador de Contenido IA!",
@@ -226,6 +248,13 @@ TRANSLATIONS: Dict[str, Dict[str, str]] = {
         "lang_spanish": "Espagnol",
         "lang_french": "Français",
         "lang_italian": "Italien",        
+        # LLM Provider section
+        "provider_header": "🤖 Fournisseur LLM",
+        "provider_label": "Sélectionner le Fournisseur",
+        "provider_help": "Choisissez entre cloud (Groq) ou local (Ollama)",
+        "provider_groq": "Groq (Cloud)",
+        "provider_ollama": "Ollama (Local)",
+        
         # Generate section
         "generate_header": "🚀 Générer",
         "generate_note": "⚠️ Assurez-vous de remplir les champs sujet et public",
@@ -247,6 +276,10 @@ TRANSLATIONS: Dict[str, Dict[str, str]] = {
         "output_stats": "📊 {words} mots · {chars} caractères",
         "success_message": "✅ Article de blog généré avec succès!",
         "previous_content_info": "ℹ️ Affichage du contenu précédemment généré. Modifiez les paramètres et cliquez sur Générer pour créer un nouveau contenu.",
+        
+        # Error messages
+        "ollama_error": "⚠️ Ollama n'est pas disponible. Assurez-vous qu'Ollama est en cours d'exécution.",
+        "ollama_help": "💡 Pour utiliser Ollama: 1) Installer depuis https://ollama.ai 2) Exécuter 'ollama serve' 3) Télécharger un modèle avec 'ollama pull llama3.2'",
         
         # Empty state
         "empty_welcome": "### 🚀 Bienvenue au Générateur de Contenu IA!",
@@ -310,6 +343,13 @@ TRANSLATIONS: Dict[str, Dict[str, str]] = {
         "lang_spanish": "Spagnolo",
         "lang_french": "Francese",
         "lang_italian": "Italiano",        
+        # LLM Provider section
+        "provider_header": "🤖 Provider LLM",
+        "provider_label": "Seleziona Provider",
+        "provider_help": "Scegli tra cloud (Groq) o locale (Ollama)",
+        "provider_groq": "Groq (Cloud)",
+        "provider_ollama": "Ollama (Locale)",
+        
         # Generate section
         "generate_header": "🚀 Genera",
         "generate_note": "⚠️ Assicurati di compilare i campi argomento e pubblico",
@@ -329,6 +369,10 @@ TRANSLATIONS: Dict[str, Dict[str, str]] = {
         "output_stats": "📊 {words} parole · {chars} caratteri",
         "success_message": "✅ Articolo di blog generato con successo!",
         "previous_content_info": "ℹ️ Visualizzazione del contenuto generato precedentemente. Modifica i parametri e fai clic su Genera per creare nuovo contenuto.",
+        
+        # Error messages
+        "ollama_error": "⚠️ Ollama non è disponibile. Assicurati che Ollama sia in esecuzione.",
+        "ollama_help": "💡 Per usare Ollama: 1) Installa da https://ollama.ai 2) Esegui 'ollama serve' 3) Scarica un modello con 'ollama pull llama3.2'",
         
         # Empty state
         "empty_welcome": "### 🚀 Benvenuto al Generatore di Contenuti IA!",

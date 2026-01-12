@@ -36,7 +36,7 @@ class OllamaLLM(BaseLLM):
         Args:
             api_key: Not used for Ollama (local), kept for interface consistency.
             model_name: Name of the Ollama model to use (e.g., 'llama3.2', 'mistral').
-                       Defaults to 'llama3.2' if not provided.
+                       Defaults to 'llama3' if not provided.
             base_url: Base URL for Ollama server. Defaults to 'http://localhost:11434'.
         """
         # Ollama doesn't require an API key (local), but we maintain the interface
@@ -45,7 +45,7 @@ class OllamaLLM(BaseLLM):
         # Set model name with fallback to environment or default
         self.model_name = (
             model_name or 
-            os.getenv("OLLAMA_MODEL_NAME", "llama3.2")
+            os.getenv("OLLAMA_MODEL_NAME", "llama3")
         )
         
         # Set base URL with fallback to environment or default

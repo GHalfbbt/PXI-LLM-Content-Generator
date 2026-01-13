@@ -414,6 +414,92 @@ def render_sidebar() -> Dict[str, Any]:
     st.sidebar.divider()
     
     # ========================================================================
+    # SECTION 4.8: IMAGE GENERATION (OPTIONAL)
+    # ========================================================================
+    st.sidebar.subheader("🖼️ Images (optional)")
+    
+    # --- Blog Images ---
+    blog_images_enabled = st.sidebar.checkbox(
+        label="Enable images for blog content",
+        value=False,
+        help="Add relevant images to your blog post to enhance visual appeal",
+        key="blog_images_enabled"
+    )
+    
+    # Initialize default values
+    blog_image_provider = "external"
+    blog_num_images = 2
+    
+    # Show blog image controls when enabled
+    if blog_images_enabled:
+        blog_image_provider = st.sidebar.radio(
+            label="Image provider",
+            options=["external", "replicate", "huggingface"],
+            format_func=lambda x: {
+                "external": "📸 Stock photos (Unsplash / Pexels)",
+                "replicate": "🎨 AI-generated images (Replicate)",
+                "huggingface": "🤖 AI-generated images (HuggingFace – experimental)"
+            }[x],
+            help="Choose the source for your images",
+            key="blog_image_provider"
+        )
+        
+        # Show helpful text based on selected provider
+        if blog_image_provider == "external":
+            st.sidebar.caption("ℹ️ High-quality stock photos with proper attribution")
+        elif blog_image_provider == "replicate":
+            st.sidebar.caption("ℹ️ AI-generated unique images (requires Replicate API key)")
+        else:  # huggingface
+            st.sidebar.caption("⚠️ Experimental - API may be unstable")
+        
+        blog_num_images = st.sidebar.slider(
+            label="Number of images",
+            min_value=1,
+            max_value=5,
+            value=2,
+            help="How many images to include in the blog post",
+            key="blog_num_images"
+        )
+    
+    st.sidebar.markdown("")  # Small spacing
+    
+    # --- Social Media Images ---
+    social_images_enabled = st.sidebar.checkbox(
+        label="Include image in social posts",
+        value=False,
+        help="Add an image to accompany your social media posts",
+        key="social_images_enabled"
+    )
+    
+    # Initialize default value
+    social_image_provider = "external"
+    
+    # Show social image controls when enabled
+    if social_images_enabled:
+        social_image_provider = st.sidebar.radio(
+            label="Image provider",
+            options=["external", "replicate", "huggingface"],
+            format_func=lambda x: {
+                "external": "📸 Stock photos (Unsplash / Pexels)",
+                "replicate": "🎨 AI-generated images (Replicate)",
+                "huggingface": "🤖 AI-generated images (HuggingFace – experimental)"
+            }[x],
+            help="Choose the source for social media images",
+            key="social_image_provider"
+        )
+        
+        # Show helpful text based on selected provider
+        if social_image_provider == "external":
+            st.sidebar.caption("ℹ️ Eye-catching stock photos optimized for social media")
+        elif social_image_provider == "replicate":
+            st.sidebar.caption("ℹ️ Custom AI-generated visuals (requires Replicate API key)")
+        else:  # huggingface
+            st.sidebar.caption("⚠️ Experimental - API may be unstable")
+    
+    # Add spacing before the generate button
+    st.sidebar.divider()
+    
+    # ========================================================================
     # SECTION 5: GENERATION CONTROLS
     # ========================================================================
     st.sidebar.subheader(get_text("generate_header", ui_language))
@@ -450,7 +536,13 @@ def render_sidebar() -> Dict[str, Any]:
         "identity_role": identity_role,
         "identity_description": identity_description,
         "identity_tone": identity_tone,
-        "identity_values": identity_values
+        "identity_values": identity_values,
+        # Image generation fields
+        "blog_images_enabled": blog_images_enabled,
+        "blog_image_provider": blog_image_provider,
+        "blog_num_images": blog_num_images,
+        "social_images_enabled": social_images_enabled,
+        "social_image_provider": social_image_provider
     }
 
 

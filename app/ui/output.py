@@ -57,18 +57,31 @@ def render_output(content: Optional[str], ui_language: str = "English") -> None:
     # Add a brief description or instruction
     st.markdown(get_text("output_description", ui_language))
     
-    # Display the generated content in a text area
-    # The text_area component provides:
-    # - Scrollable viewing for long content
-    # - Built-in copy functionality
-    # - Good readability with proper text wrapping
-    st.text_area(
-        label=get_text("output_label", ui_language),
-        value=content,
-        height=500,  # Set a comfortable height for reading
-        label_visibility="collapsed",  # Hide the label since we have a subheader
-        key="output_content"
-    )
+    # Create tabs for different viewing modes
+    tab1, tab2 = st.tabs(["📄 Preview", "📋 Markdown"])
+    
+    with tab1:
+        # Display the content with rendered markdown (including images)
+        # Check if content has images (markdown image syntax)
+        if "![" in content and "](" in content:
+            st.info("✨ Content includes images. They are displayed below.")
+        
+        # Render the markdown content with images
+        st.markdown(content, unsafe_allow_html=True)
+    
+    with tab2:
+        # Display the raw markdown in a text area for easy copying
+        # The text_area component provides:
+        # - Scrollable viewing for long content
+        # - Built-in copy functionality
+        # - Good readability with proper text wrapping
+        st.text_area(
+            label=get_text("output_label", ui_language),
+            value=content,
+            height=500,  # Set a comfortable height for reading
+            label_visibility="collapsed",  # Hide the label since we have a subheader
+            key="output_content"
+        )
     
     # ========================================================================
     # ADDITIONAL ACTIONS (OPTIONAL)

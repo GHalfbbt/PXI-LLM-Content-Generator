@@ -11,6 +11,7 @@ from typing import List
 from app.core.images.base import ImageProvider
 from app.core.images.huggingface import HuggingFaceImageProvider
 from app.core.images.external import ExternalImageProvider
+from app.core.images.replicate import ReplicateImageProvider
 
 
 class ImageProviderFactory:
@@ -24,9 +25,10 @@ class ImageProviderFactory:
     Supported Providers:
         - "huggingface": AI-powered image generation via Hugging Face
         - "external": Stock photo search via Unsplash/Pexels
+        - "replicate": AI-powered image generation via Replicate
     
     Usage Example:
-        >>> provider = ImageProviderFactory.create_provider("huggingface")
+        >>> provider = ImageProviderFactory.create_provider("replicate")
         >>> if provider.validate():
         ...     asset = provider.generate("beautiful sunset")
     """
@@ -35,6 +37,7 @@ class ImageProviderFactory:
     _PROVIDERS = {
         "huggingface": HuggingFaceImageProvider,
         "external": ExternalImageProvider,
+        "replicate": ReplicateImageProvider,
     }
     
     @staticmethod
@@ -44,7 +47,7 @@ class ImageProviderFactory:
         
         Args:
             provider_name: Name of the provider to create.
-                          Must be one of: "huggingface", "external"
+                          Must be one of: "huggingface", "external", "replicate"
         
         Returns:
             ImageProvider: Initialized provider instance.
@@ -53,9 +56,9 @@ class ImageProviderFactory:
             ValueError: If provider_name is not supported.
         
         Example:
-            >>> provider = ImageProviderFactory.create_provider("external")
+            >>> provider = ImageProviderFactory.create_provider("replicate")
             >>> print(provider.provider_name)
-            "external"
+            "replicate"
         """
         provider_name = provider_name.lower().strip()
         
@@ -80,7 +83,7 @@ class ImageProviderFactory:
         Example:
             >>> providers = ImageProviderFactory.get_supported_providers()
             >>> print(providers)
-            ['huggingface', 'external']
+            ['huggingface', 'external', 'replicate']
         """
         return list(ImageProviderFactory._PROVIDERS.keys())
     

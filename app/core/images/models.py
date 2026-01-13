@@ -29,7 +29,7 @@ class ImageAsset:
                 For external search: "artificial intelligence technology"
         
         provider: The service or system that provided this image.
-                 Supported values: "huggingface", "external", "local"
+                 Supported values: "huggingface", "external", "replicate", "local"
                  This helps track image sources and attribution.
         
         source: The location where the image can be accessed.
@@ -85,7 +85,7 @@ class ImageAsset:
     
     id: str
     prompt: str
-    provider: Literal["huggingface", "external", "local"]
+    provider: Literal["huggingface", "external", "replicate", "local"]
     source: str
     placement: Optional[str] = None
     alt_text: Optional[str] = None
@@ -99,10 +99,10 @@ class ImageAsset:
             raise ValueError("ImageAsset prompt cannot be empty")
         if not self.source:
             raise ValueError("ImageAsset source cannot be empty")
-        if self.provider not in ["huggingface", "external", "local"]:
+        if self.provider not in ["huggingface", "external", "replicate", "local"]:
             raise ValueError(
                 f"Invalid provider '{self.provider}'. "
-                f"Must be 'huggingface', 'external', or 'local'"
+                f"Must be 'huggingface', 'external', 'replicate', or 'local'"
             )
     
     def is_url(self) -> bool:

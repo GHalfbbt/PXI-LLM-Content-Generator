@@ -501,7 +501,10 @@ def render_blog_generation_ui(inputs: dict, ui_language: str) -> None:
                     language=inputs["language"],
                     llm_provider=inputs["llm_provider"],
                     identity=inputs.get("identity"),  # Pass identity if available
-                    style=inputs.get("style", "default")  # Pass content writing style
+                    style=inputs.get("style", "default"),  # Pass content writing style
+                    include_images=inputs.get("blog_images_enabled", False),  # Image generation
+                    image_provider=inputs.get("blog_image_provider", "external"),
+                    num_images=inputs.get("blog_num_images", 2)
                 )
                 
                 # ============================================================
@@ -537,8 +540,27 @@ def render_blog_generation_ui(inputs: dict, ui_language: str) -> None:
                 
                 error_msg = str(e).lower()
                 
+                # Detect image provider errors
+                if inputs.get("blog_images_enabled", False) and any(
+                    keyword in error_msg for keyword in [
+                        "image",
+                        "unsplash",
+                        "pexels",
+                        "huggingface",
+                        "replicate",
+                        "api key",
+                        "access key"
+                    ]
+                ):
+                    st.warning(
+                        f"⚠️ Image generation failed: {str(e)}\n\n"
+                        "The blog content was generated successfully, but images could not be added. "
+                        "Please check your API keys or try a different image provider."
+                    )
+                    # Continue without showing full error - content is still valid
+                
                 # Detect Ollama-specific errors
-                if inputs["llm_provider"] == "ollama" and any(
+                elif inputs["llm_provider"] == "ollama" and any(
                     keyword in error_msg for keyword in [
                         "connection refused",
                         "connection error",
@@ -664,7 +686,9 @@ def render_social_media_ui(inputs: dict, ui_language: str) -> None:
                         language=inputs["language"],  # Pass the content language
                         llm_provider=social_llm_provider,
                         identity=identity_obj,  # Pass identity if available
-                        style=inputs.get("style", "default")  # Pass content writing style
+                        style=inputs.get("style", "default"),  # Pass content writing style
+                        include_image=inputs.get("social_images_enabled", False),  # Image generation
+                        image_provider=inputs.get("social_image_provider", "external")
                     )
                     
                     # Extract text from result dictionary
@@ -679,6 +703,44 @@ def render_social_media_ui(inputs: dict, ui_language: str) -> None:
                     }
                     
                 except Exception as e:
+                    # Check if error is image-related
+                    error_msg = str(e).lower()
+                    is_image_error = any(
+                        keyword in error_msg for keyword in [
+                            "image",
+                            "unsplash",
+                            "pexels",
+                            "huggingface",
+                            "replicate"
+                        ]
+                    )
+                    
+                    if is_image_error and inputs.get("social_images_enabled", False):
+                        # Image error - generate post without image
+                        st.warning(f"⚠️ Image generation failed for {platform}. Continuing without image...")
+                        try:
+                            # Retry without image
+                            social_post_result = generate_social_post(
+                                blog_content=blog_content,
+                                platform=platform,
+                                language=inputs["language"],
+                                llm_provider=social_llm_provider,
+                                identity=identity_obj,
+                                style=inputs.get("style", "default"),
+                                include_image=False  # Disable images
+                            )
+                            social_post_text = social_post_result.get("text", social_post_result) if isinstance(social_post_result, dict) else social_post_result
+                            
+                            st.session_state["social_posts"][platform] = {
+                                "content": social_post_text,
+                                "status": "success",
+                                "provider": social_llm_provider,
+                                "image_warning": str(e)
+                            }
+                            continue
+                        except:
+                            pass  # Fall through to regular error handling
+                    
                     # Store error for this platform
                     st.session_state["social_posts"][platform] = {
                         "content": None,

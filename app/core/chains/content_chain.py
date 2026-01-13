@@ -7,12 +7,15 @@ that generates blog posts based on user inputs.
 """
 
 from typing import Optional
+import logging
 
 from app.core.prompts.blog import get_blog_prompt
 from app.core.identity import IdentityProfile, build_identity_context
 from app.core.styles import StyleFactory
 from app.llms.factory import LLMFactory
 from app.config import settings
+
+logger = logging.getLogger(__name__)
 
 
 # ============================================================================
@@ -28,7 +31,10 @@ def generate_blog_content(
     temperature: Optional[float] = None,
     max_tokens: Optional[int] = None,
     identity: Optional[IdentityProfile] = None,
-    style: str = "default"
+    style: str = "default",
+    include_images: bool = False,
+    image_provider: str = "external",
+    num_images: int = 2
 ) -> str:
     """
     Generate blog content using LangChain with selected LLM provider.
@@ -66,7 +72,13 @@ def generate_blog_content(
         style (str, optional): Content writing style to apply.
                               Options: "default", "seo", "divulgative", "kids".
                               Defaults to "default" (no style modification).
-                                             If provided, content reflects this identity's voice.
+                              If provided, content reflects this identity's voice.
+        include_images (bool, optional): Whether to generate and inject images.
+                                        Defaults to False.
+        image_provider (str, optional): Image provider to use ("huggingface", "external").
+                                       Defaults to "external".
+        num_images (int, optional): Number of images to generate.
+                                   Defaults to 2 (1 cover + 1 section).
     
     Returns:
         str: The generated blog post content, ready for publication.
@@ -131,7 +143,7 @@ def generate_blog_content(
         except ValueError as e:
             # If invalid style, log warning but continue with default
             # This prevents breaking generation due to invalid style
-            print(f"Warning: {str(e)}. Using default style.")
+            logger.warning(f"{str(e)}. Using default style.")
     
     # Third: Add the base prompt template
     template_parts.append(prompt.template)
@@ -169,9 +181,37 @@ def generate_blog_content(
         else:
             content = str(result)
         
-        # Return the generated content as a string
-        # The result is the complete blog post ready for display/publication
-        return content.strip()
+        # Clean the generated content
+        content = content.strip()
+        
+        # Step 8: Optionally generate and inject images
+        if include_images:
+            try:
+                from app.core.chains.image_chain import generate_images_for_content
+                from app.core.images.integrator import inject_images_into_blog
+                
+                # Generate images based on content
+                images = generate_images_for_content(
+                    content=content,
+                    num_images=num_images,
+                    provider=image_provider,
+                    include_cover=True
+                )
+                
+                # Inject images into content
+                if images:
+                    content = inject_images_into_blog(content, images)
+                    logger.info(f"Injected {len(images)} images into blog content")
+                else:
+                    logger.warning("No images generated, returning content without images")
+            
+            except Exception as img_error:
+                # Log error but don't fail the entire generation
+                logger.error(f"Failed to generate/inject images: {str(img_error)}")
+                # Return content without images
+        
+        # Return the generated content (with or without images)
+        return content
     
     except Exception as e:
         # Catch and re-raise with more context if generation fails

@@ -9,11 +9,17 @@ Public API:
     - ImageAsset: Data model for image metadata
     - ImageProvider: Abstract interface for image providers
     - ImageProviderFactory: Factory for creating provider instances
-    - generate_images_for_content: Main function for content enrichment
-    - generate_single_image: Simple function for single image generation
+    - Image integration utilities
+
+For orchestration functions, import from app.core.chains.image_chain:
+    - generate_images_for_content
+    - generate_single_image
+    - get_available_providers
+    - validate_provider
 
 Usage Example:
-    >>> from app.core.images import generate_images_for_content
+    >>> from app.core.images import ImageAsset, ImageProviderFactory
+    >>> from app.core.chains.image_chain import generate_images_for_content
     >>> 
     >>> content = "# AI in Healthcare\\n\\nArtificial intelligence..."
     >>> images = generate_images_for_content(
@@ -32,12 +38,12 @@ from app.core.images.factory import ImageProviderFactory
 from app.core.images.huggingface import HuggingFaceImageProvider
 from app.core.images.external import ExternalImageProvider
 
-# Import orchestration functions from chains
-from app.core.chains.image_chain import (
-    generate_images_for_content,
-    generate_single_image,
-    get_available_providers,
-    validate_provider
+# Import integration utilities (no circular dependency)
+from app.core.images.integrator import (
+    inject_images_into_blog,
+    prepare_social_image,
+    extract_first_image_from_content,
+    remove_images_from_content
 )
 
 __all__ = [
@@ -54,9 +60,9 @@ __all__ = [
     # Factory
     "ImageProviderFactory",
     
-    # Orchestration functions
-    "generate_images_for_content",
-    "generate_single_image",
-    "get_available_providers",
-    "validate_provider",
+    # Integration utilities
+    "inject_images_into_blog",
+    "prepare_social_image",
+    "extract_first_image_from_content",
+    "remove_images_from_content",
 ]

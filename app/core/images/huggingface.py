@@ -54,11 +54,10 @@ class HuggingFaceImageProvider(ImageProvider):
     def __init__(self):
         """Initialize the Hugging Face image provider with environment config."""
         self.api_token = os.getenv("HF_API_TOKEN")
-        self.model = os.getenv("HF_IMAGE_MODEL")
-        self.api_url = None
-        
-        if self.model:
-            self.api_url = f"https://api-inference.huggingface.co/models/{self.model}"
+        # Default to stable-diffusion-xl which is widely available
+        self.model = os.getenv("HF_IMAGE_MODEL", "stabilityai/stable-diffusion-xl-base-1.0")
+        # Use the API inference endpoint
+        self.api_url = f"https://api-inference.huggingface.co/models/{self.model}"
     
     def validate(self) -> bool:
         """
@@ -115,27 +114,29 @@ class HuggingFaceImageProvider(ImageProvider):
             )
         
         try:
-            # Prepare API request
+            # Prepare API request - different format for router API
             headers = {
-                "Authorization": f"Bearer {self.api_token}",
-                "Content-Type": "application/json"
+                "Authorization": f"Bearer {self.api_token}"
             }
             
-            payload = {
+            # Router API expects form data, not JSON
+            data = {
                 "inputs": prompt
             }
             
-            # Call Hugging Face API
+            # Call Hugging Face API with longer timeout for image generation
+            logger.info(f"Calling HuggingFace API: {self.api_url}")
             response = requests.post(
                 self.api_url,
                 headers=headers,
-                json=payload,
-                timeout=30
+                data=data,  # Changed from json=payload to data=data
+                timeout=60
             )
             
             # Handle errors
             if response.status_code != 200:
                 error_detail = response.text
+                logger.error(f"HuggingFace API error {response.status_code}: {error_detail}")
                 if response.status_code == 503:
                     raise ConnectionError(
                         f"Model is loading. Please try again in a few moments. "

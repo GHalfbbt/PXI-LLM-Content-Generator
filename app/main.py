@@ -658,7 +658,7 @@ def render_social_media_ui(inputs: dict, ui_language: str) -> None:
             for platform in selected_platforms:
                 try:
                     # Generate platform-specific post
-                    social_post = generate_social_post(
+                    social_post_result = generate_social_post(
                         blog_content=blog_content,
                         platform=platform,
                         language=inputs["language"],  # Pass the content language
@@ -667,9 +667,13 @@ def render_social_media_ui(inputs: dict, ui_language: str) -> None:
                         style=inputs.get("style", "default")  # Pass content writing style
                     )
                     
+                    # Extract text from result dictionary
+                    # generate_social_post now returns {"text": str, "image": ImageAsset, "platform": str}
+                    social_post_text = social_post_result.get("text", social_post_result) if isinstance(social_post_result, dict) else social_post_result
+                    
                     # Store successful result
                     st.session_state["social_posts"][platform] = {
-                        "content": social_post,
+                        "content": social_post_text,
                         "status": "success",
                         "provider": social_llm_provider
                     }

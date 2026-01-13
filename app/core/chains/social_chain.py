@@ -6,13 +6,16 @@ platform-specific social media posts using the adapter pattern
 and LangChain LCEL composition.
 """
 
-from typing import Optional
+from typing import Optional, Dict, Any
+import logging
 
 from app.core.social.factory import SocialAdapterFactory
 from app.core.identity import IdentityProfile, build_identity_context
 from app.core.styles import StyleFactory
 from app.llms.factory import LLMFactory
 from app.config import settings
+
+logger = logging.getLogger(__name__)
 
 
 # ============================================================================
@@ -27,8 +30,10 @@ def generate_social_post(
     temperature: float = None,
     max_tokens: int = None,
     identity: Optional[IdentityProfile] = None,
-    style: str = "default"
-) -> str:
+    style: str = "default",
+    include_image: bool = False,
+    image_provider: str = "external"
+) -> Dict[str, Any]:
     """
     Generate a platform-specific social media post from a blog article.
     
@@ -63,10 +68,17 @@ def generate_social_post(
                    Defaults to settings.DEFAULT_MAX_TOKENS (2048).
         identity: Identity information to personalize the social post.
         style: Content writing style to apply.
-              Options: "default", "seo", "divulgative", "kids".
-              Defaults to "default" (no style modification).
-                 If provided, the post reflects this identity's voice.
+              If provided, the post reflects this identity's voice.
+        include_image: Whether to generate and attach an image.
+                      Defaults to False.
+        image_provider: Image provider to use ("huggingface", "external").
+                       Defaults to "external".
     
+    Returns:
+        Dict[str, Any]: Dictionary containing:
+                       - "text": The generated social media post text
+                       - "image": Optional ImageAsset object
+                       - "platform": The target platform
     Returns:
         str: The generated social media post, optimized for the target platform.
     
@@ -120,7 +132,7 @@ def generate_social_post(
                 template_parts.append(style_instruction)
         except ValueError as e:
             # If invalid style, log warning but continue with default
-            print(f"Warning: {str(e)}. Using default style.")
+            logger.warning(f"{str(e)}. Using default style.")
     
     # Third: Add the platform-specific prompt template
     template_parts.append(prompt.template)
@@ -166,18 +178,91 @@ def generate_social_post(
         # Extract the content from the response
         # The result is an AIMessage object, we need the content string
         if hasattr(result, 'content'):
-            content = result.content
+            post_text = result.content
         else:
-            content = str(result)
+            post_text = str(result)
         
-        # Return the generated social post as a clean string
-        return content.strip()
+        # Clean the post text
+        post_text = post_text.strip()
+        
+        # Step 9: Optionally generate an image for the post
+        image_asset = None
+        
+        if include_image:
+            try:
+                from app.core.chains.image_chain import generate_single_image
+                from app.core.images.context import extract_main_topic
+                
+                # Extract topic from blog content for image generation
+                topic = extract_main_topic(blog_content, max_words=5)
+                
+                # Generate a single image for the social post
+                image_asset = generate_single_image(
+                    prompt=f"{topic}, social media image, engaging",
+                    provider=image_provider,
+                    placement="social"
+                )
+                
+                logger.info(f"Generated image for {platform} post")
+            
+            except Exception as img_error:
+                # Log error but don't fail the entire generation
+                logger.error(f"Failed to generate social media image: {str(img_error)}")
+                # Continue without image
+        
+        # Return structured result with text and optional image
+        return {
+            "text": post_text,
+            "image": image_asset,
+            "platform": platform
+        }
     
     except Exception as e:
         # Catch and re-raise with more context if generation fails
         raise Exception(
             f"Failed to generate {platform} post: {str(e)}"
         ) from e
+
+
+# ============================================================================
+# BACKWARD COMPATIBILITY
+# ============================================================================
+
+def generate_social_post_text_only(
+    blog_content: str,
+    platform: str,
+    language: str = "English",
+    llm_provider: str = "groq",
+    temperature: float = None,
+    max_tokens: int = None,
+    identity: Optional[IdentityProfile] = None,
+    style: str = "default"
+) -> str:
+    """
+    Generate social post and return only the text (backward compatible).
+    
+    This is a convenience wrapper that maintains backward compatibility
+    with code that expects only text output.
+    
+    Args:
+        Same as generate_social_post, but without image parameters.
+    
+    Returns:
+        str: The generated social media post text only.
+    """
+    result = generate_social_post(
+        blog_content=blog_content,
+        platform=platform,
+        language=language,
+        llm_provider=llm_provider,
+        temperature=temperature,
+        max_tokens=max_tokens,
+        identity=identity,
+        style=style,
+        include_image=False
+    )
+    
+    return result["text"]
 
 
 # ============================================================================

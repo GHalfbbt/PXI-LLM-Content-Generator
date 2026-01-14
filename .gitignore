@@ -21,3 +21,6 @@ nul
 
 # IDE
 .vscode/
+
+# Local development scripts
+app/scripts/

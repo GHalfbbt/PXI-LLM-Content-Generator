@@ -20,6 +20,11 @@ python-dotenv>=1.0.0
 replicate>=0.25.0
 huggingface-hub>=0.20.0
 
+# RAG Dependencies
+arxiv>=2.1.0
+chromadb>=0.4.22
+sentence-transformers>=2.2.0
+
 # Additional Dependencies (installed automatically with above packages)
 # - pydantic>=2.0.0 (data validation)
 # - aiohttp (async HTTP client)

@@ -24,3 +24,6 @@ nul
 
 # Local development scripts
 app/scripts/
+
+# RAG storage
+app/storage/chroma/

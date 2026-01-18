@@ -184,23 +184,50 @@ def _find_image_by_placement(images: List[ImageAsset], placement: str) -> Option
 
 def _create_markdown_image(image: ImageAsset) -> str:
     """
-    Create a Markdown image tag from an ImageAsset.
+    Create a Markdown image tag from an ImageAsset with attribution.
     
     Args:
         image: ImageAsset to convert to Markdown.
     
     Returns:
-        str: Markdown image syntax.
+        str: Markdown image syntax with attribution caption.
     
     Example:
         ![Alt text](image_url)
+        *Photo by Author on Unsplash*
     """
     alt_text = image.alt_text or image.prompt or "Image"
     
     # Escape special characters in alt text
     alt_text = alt_text.replace('[', '\\[').replace(']', '\\]')
     
-    return f"![{alt_text}]({image.source})"
+    # Build image markdown
+    result = f"![{alt_text}]({image.source})"
+    
+    # Add simplified attribution
+    if image.attribution:
+        # Extract just the source name from attribution
+        if 'Unsplash' in image.attribution:
+            result += "\n*📷 Imagen de Unsplash*"
+        elif 'Pexels' in image.attribution:
+            result += "\n*📷 Imagen de Pexels*"
+        else:
+            # For other attributions, just show generic
+            result += "\n*📷 Imagen de stock*"
+    elif image.provider:
+        # Generic attribution based on provider
+        provider_names = {
+            'external': 'Imagen de stock',
+            'unsplash': 'Imagen de Unsplash',
+            'pexels': 'Imagen de Pexels',
+            'huggingface': 'Generada por IA (HuggingFace)',
+            'replicate': 'Generada por IA (Replicate)',
+            'local': 'Imagen local'
+        }
+        provider_name = provider_names.get(image.provider, image.provider.title())
+        result += f"\n*📷 {provider_name}*"
+    
+    return result
 
 
 def count_images_in_content(content: str) -> int:

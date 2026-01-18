@@ -504,7 +504,12 @@ def render_blog_generation_ui(inputs: dict, ui_language: str) -> None:
                     style=inputs.get("style", "default"),  # Pass content writing style
                     include_images=inputs.get("blog_images_enabled", False),  # Image generation
                     image_provider=inputs.get("blog_image_provider", "external"),
-                    num_images=inputs.get("blog_num_images", 2)
+                    num_images=inputs.get("blog_num_images", 2),
+                    # RAG parameters
+                    use_rag=inputs.get("rag_enabled", False),
+                    rag_query=inputs.get("rag_query", ""),
+                    rag_domain=inputs.get("rag_domain", "General"),
+                    rag_max_docs=inputs.get("rag_max_docs", 5)
                 )
                 
                 # ============================================================
@@ -518,6 +523,15 @@ def render_blog_generation_ui(inputs: dict, ui_language: str) -> None:
                 # Store the generation parameters used
                 # This allows detecting changes for auto-regeneration
                 st.session_state["last_generation_params"] = current_params
+                
+                # Check for image generation warnings
+                import warnings
+                with warnings.catch_warnings(record=True) as w:
+                    warnings.simplefilter("always")
+                    # If there were warnings (like image generation failures)
+                    if w and inputs.get("blog_images_enabled", False):
+                        for warning in w:
+                            st.warning(f"⚠️ {str(warning.message)}")
                 
                 # Display success message (only if explicitly clicked generate button)
                 if inputs["generate_clicked"]:

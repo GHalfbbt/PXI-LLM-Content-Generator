@@ -6,8 +6,8 @@ Splits documents into smaller chunks while preserving metadata.
 
 from typing import List
 import logging
-from langchain.text_splitter import RecursiveCharacterTextSplitter
-from langchain.schema import Document
+from langchain_text_splitters import RecursiveCharacterTextSplitter
+from langchain_core.documents import Document
 
 from app.core.rag.config import RAGConfig
 

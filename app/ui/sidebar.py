@@ -109,6 +109,54 @@ def render_sidebar() -> Dict[str, Any]:
     
     st.sidebar.divider()
     
+    # ========================================================================
+    # SECTION 0.5: SCIENTIFIC KNOWLEDGE (RAG) - GROUND TRUTH DECISION
+    # ========================================================================
+    st.sidebar.subheader("🧠 Scientific Knowledge (RAG)")
+    
+    rag_enabled = st.sidebar.checkbox(
+        label="Enable scientific RAG (arXiv)",
+        value=False,
+        help="Ground your content in real scientific research from arXiv to reduce hallucinations and provide evidence-based information",
+        key="rag_enabled"
+    )
+    
+    # Initialize default values
+    rag_query = ""
+    rag_domain = "General"
+    rag_max_docs = 5
+    
+    # Show RAG controls when enabled
+    if rag_enabled:
+        rag_query = st.sidebar.text_input(
+            label="Scientific topic or question",
+            value="",
+            placeholder="e.g., quantum computing applications",
+            help="Enter a specific scientific topic or question to search for relevant research papers",
+            key="rag_query"
+        )
+        
+        rag_domain = st.sidebar.selectbox(
+            label="Scientific domain",
+            options=["General", "AI", "Physics", "Biomedicine", "Astrophysics"],
+            index=0,
+            help="Narrow the search to a specific scientific field",
+            key="rag_domain"
+        )
+        
+        rag_max_docs = st.sidebar.slider(
+            label="Max arXiv papers",
+            min_value=1,
+            max_value=10,
+            value=5,
+            help="Maximum number of scientific papers to retrieve and analyze",
+            key="rag_max_docs"
+        )
+        
+        st.sidebar.caption("ℹ️ Your content will be grounded in real scientific research, reducing AI hallucinations")
+    
+    st.sidebar.divider()
+    
     # Display sidebar header using selected language
     st.sidebar.title(get_text("sidebar_title", ui_language))
     st.sidebar.markdown(get_text("sidebar_subtitle", ui_language))
@@ -434,11 +482,12 @@ def render_sidebar() -> Dict[str, Any]:
     if blog_images_enabled:
         blog_image_provider = st.sidebar.radio(
             label="Image provider",
-            options=["external", "replicate", "huggingface"],
+            options=["unsplash", "pexels", "replicate", "huggingface"],
             format_func=lambda x: {
-                "external": "📸 Stock photos (Unsplash / Pexels)",
-                "replicate": "🎨 AI-generated images (Replicate)",
-                "huggingface": "🤖 AI-generated images (HuggingFace – experimental)"
+                "unsplash": "📸 Unsplash (stock photos)",
+                "pexels": "📸 Pexels (stock photos)",
+                "replicate": "🎨 Replicate (AI-generated)",
+                "huggingface": "🤖 HuggingFace (AI – experimental)"
             }[x],
             help="Choose the source for your images",
             key="blog_image_provider"
@@ -478,19 +527,22 @@ def render_sidebar() -> Dict[str, Any]:
     if social_images_enabled:
         social_image_provider = st.sidebar.radio(
             label="Image provider",
-            options=["external", "replicate", "huggingface"],
+            options=["unsplash", "pexels", "replicate", "huggingface"],
             format_func=lambda x: {
-                "external": "📸 Stock photos (Unsplash / Pexels)",
-                "replicate": "🎨 AI-generated images (Replicate)",
-                "huggingface": "🤖 AI-generated images (HuggingFace – experimental)"
+                "unsplash": "📸 Unsplash (stock photos)",
+                "pexels": "📸 Pexels (stock photos)",
+                "replicate": "🎨 Replicate (AI-generated)",
+                "huggingface": "🤖 HuggingFace (AI – experimental)"
             }[x],
             help="Choose the source for social media images",
             key="social_image_provider"
         )
         
         # Show helpful text based on selected provider
-        if social_image_provider == "external":
-            st.sidebar.caption("ℹ️ Eye-catching stock photos optimized for social media")
+        if social_image_provider == "unsplash":
+            st.sidebar.caption("ℹ️ Eye-catching stock photos from Unsplash")
+        elif social_image_provider == "pexels":
+            st.sidebar.caption("ℹ️ Eye-catching stock photos from Pexels")
         elif social_image_provider == "replicate":
             st.sidebar.caption("ℹ️ Custom AI-generated visuals (requires Replicate API key)")
         else:  # huggingface
@@ -542,7 +594,12 @@ def render_sidebar() -> Dict[str, Any]:
         "blog_image_provider": blog_image_provider,
         "blog_num_images": blog_num_images,
         "social_images_enabled": social_images_enabled,
-        "social_image_provider": social_image_provider
+        "social_image_provider": social_image_provider,
+        # RAG configuration
+        "rag_enabled": rag_enabled,
+        "rag_query": rag_query,
+        "rag_domain": rag_domain,
+        "rag_max_docs": rag_max_docs
     }
 
 

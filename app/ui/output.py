@@ -66,6 +66,36 @@ def render_output(content: Optional[str], ui_language: str = "English") -> None:
         if "![" in content and "](" in content:
             st.info("✨ Content includes images. They are displayed below.")
         
+        # Apply custom CSS for better heading spacing
+        st.markdown("""
+        <style>
+        /* Better heading spacing and visual hierarchy */
+        .main h1 {
+            margin-top: 2rem !important;
+            margin-bottom: 1rem !important;
+            padding-top: 0.5rem !important;
+            border-top: 3px solid #3B82F6;
+        }
+        .main h2 {
+            margin-top: 1.5rem !important;
+            margin-bottom: 0.75rem !important;
+            padding-top: 0.5rem !important;
+            border-top: 2px solid #60A5FA;
+        }
+        .main h3 {
+            margin-top: 1rem !important;
+            margin-bottom: 0.5rem !important;
+        }
+        .main p {
+            margin-bottom: 1rem !important;
+            line-height: 1.6 !important;
+        }
+        .main ul, .main ol {
+            margin-bottom: 1rem !important;
+        }
+        </style>
+        """, unsafe_allow_html=True)
+        
         # Render the markdown content with images
         st.markdown(content, unsafe_allow_html=True)
     
@@ -84,21 +114,24 @@ def render_output(content: Optional[str], ui_language: str = "English") -> None:
         )
     
     # ========================================================================
-    # ADDITIONAL ACTIONS (OPTIONAL)
+    # ADDITIONAL ACTIONS AND STATISTICS - OUTSIDE TABS
     # ========================================================================
     
-    # Create columns for action buttons
-    col1, col2, col3 = st.columns([1, 1, 4])
+    # Add spacing and divider AFTER tabs
+    st.markdown("")
+    st.divider()
     
-    # Add a copy button hint (the text_area has built-in copy functionality)
+    # Display statistics and copy hint in columns
+    word_count = len(content.split())
+    char_count = len(content)
+    
+    col1, col2 = st.columns([1, 1])
+    
     with col1:
-        st.caption(get_text("output_copy_hint", ui_language))
+        st.info(f"📊 **Statistics:** {word_count:,} words · {char_count:,} characters", icon="📊")
     
-    # Display character and word count as metadata
     with col2:
-        word_count = len(content.split())
-        char_count = len(content)
-        st.caption(get_text("output_stats", ui_language, words=word_count, chars=char_count))
+        st.success("💡 **Copy text:** Use the 'Markdown' tab above", icon="📋")
 
 
 # ============================================================================

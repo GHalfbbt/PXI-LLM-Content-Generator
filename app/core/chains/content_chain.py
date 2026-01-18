@@ -34,7 +34,11 @@ def generate_blog_content(
     style: str = "default",
     include_images: bool = False,
     image_provider: str = "external",
-    num_images: int = 2
+    num_images: int = 2,
+    use_rag: bool = False,
+    rag_query: str = "",
+    rag_domain: str = "General",
+    rag_max_docs: int = 5
 ) -> str:
     """
     Generate blog content using LangChain with selected LLM provider.
@@ -79,6 +83,15 @@ def generate_blog_content(
                                        Defaults to "external".
         num_images (int, optional): Number of images to generate.
                                    Defaults to 2 (1 cover + 1 section).
+        use_rag (bool, optional): Whether to use RAG (Retrieval-Augmented Generation).
+                                 Defaults to False.
+        rag_query (str, optional): Scientific topic or question for RAG search.
+                                  Defaults to empty string.
+        rag_domain (str, optional): Scientific domain to narrow search.
+                                   Options: "General", "AI", "Physics", "Biomedicine", "Astrophysics".
+                                   Defaults to "General".
+        rag_max_docs (int, optional): Maximum number of scientific papers to retrieve.
+                                     Defaults to 5.
     
     Returns:
         str: The generated blog post content, ready for publication.
@@ -125,7 +138,7 @@ def generate_blog_content(
     prompt = get_blog_prompt()
     
     # Step 5: Build the complete prompt with optional enhancements
-    # The injection order is: Identity (if provided) -> Style (if not default) -> Base prompt
+    # The injection order is: Identity (if provided) -> Style (if not default) -> RAG context (if enabled) -> Base prompt
     template_parts = []
     
     # First: Add identity context if provided (highest priority)
@@ -145,7 +158,93 @@ def generate_blog_content(
             # This prevents breaking generation due to invalid style
             logger.warning(f"{str(e)}. Using default style.")
     
-    # Third: Add the base prompt template
+    # Third: Add RAG context if enabled
+    rag_context = None
+    if use_rag and rag_query.strip():
+        try:
+            from app.core.rag.loaders.arxiv_loader import load_arxiv_documents
+            from app.core.rag.splitters.text_splitter import split_documents
+            from app.core.rag.embeddings.embedding_factory import EmbeddingFactory
+            from app.core.rag.vectorstores.vectorstore_factory import VectorStoreFactory
+            from app.core.rag.retrievers.retriever_factory import RetrieverFactory
+            from app.core.rag.config import RAGConfig
+            
+            logger.info(f"RAG enabled: searching arXiv for '{rag_query}' in domain '{rag_domain}'")
+            
+            # Build arXiv query with domain prefix if not General
+            arxiv_query = rag_query
+            if rag_domain != "General":
+                # Add domain-specific prefixes for better results
+                domain_prefixes = {
+                    "AI": "artificial intelligence OR machine learning OR deep learning",
+                    "Physics": "physics OR quantum",
+                    "Biomedicine": "biology OR medicine OR biomedical",
+                    "Astrophysics": "astronomy OR astrophysics OR cosmology"
+                }
+                prefix = domain_prefixes.get(rag_domain, "")
+                if prefix:
+                    arxiv_query = f"({prefix}) AND ({rag_query})"
+            
+            # Load documents from arXiv
+            documents = load_arxiv_documents(arxiv_query, max_docs=rag_max_docs)
+            
+            if documents:
+                logger.info(f"Retrieved {len(documents)} documents from arXiv")
+                
+                # Split documents into chunks
+                config = RAGConfig()
+                chunks = split_documents(
+                    documents, 
+                    chunk_size=config.CHUNK_SIZE,
+                    chunk_overlap=config.CHUNK_OVERLAP
+                )
+                logger.info(f"Split into {len(chunks)} chunks")
+                
+                # Create embeddings and vectorstore
+                embeddings = EmbeddingFactory.get_default_embeddings()
+                vectorstore = VectorStoreFactory.create_vectorstore_from_documents(
+                    documents=chunks,
+                    embeddings=embeddings,
+                    collection_name=f"temp_{hash(rag_query)}"  # Temporary collection
+                )
+                
+                # Create retriever and get relevant chunks
+                retriever = RetrieverFactory.create_default_retriever(vectorstore)
+                relevant_docs = retriever.get_relevant_documents(rag_query)
+                
+                if relevant_docs:
+                    logger.info(f"Found {len(relevant_docs)} relevant chunks")
+                    
+                    # Build RAG context section
+                    rag_context_parts = [
+                        "SCIENTIFIC RESEARCH CONTEXT:",
+                        "The following information comes from recent scientific papers on arXiv.",
+                        "Use this research to ground your content in scientific evidence.",
+                        ""
+                    ]
+                    
+                    for i, doc in enumerate(relevant_docs, 1):
+                        source = doc.metadata.get("source", "unknown")
+                        title = doc.metadata.get("title", "Untitled")
+                        rag_context_parts.append(f"[Source {i}: {title} ({source})]")
+                        rag_context_parts.append(doc.page_content)
+                        rag_context_parts.append("")
+                    
+                    rag_context = "\n".join(rag_context_parts)
+                    template_parts.append(rag_context)
+                    logger.info("RAG context successfully added to prompt")
+                else:
+                    logger.warning("No relevant documents found for query")
+            else:
+                logger.warning(f"No documents retrieved from arXiv for query: {arxiv_query}")
+        
+        except Exception as rag_error:
+            # Log error but don't fail generation - RAG is optional
+            logger.error(f"RAG failed: {str(rag_error)}")
+            logger.warning("Continuing blog generation without RAG context")
+            # Optionally notify user via warning in UI (handled in main.py)
+    
+    # Fourth: Add the base prompt template
     template_parts.append(prompt.template)
     
     # Combine all parts with double newlines for clear separation
@@ -190,6 +289,8 @@ def generate_blog_content(
                 from app.core.chains.image_chain import generate_images_for_content
                 from app.core.images.integrator import inject_images_into_blog
                 
+                logger.info(f"Starting image generation: {num_images} images with {image_provider} provider")
+                
                 # Generate images based on content
                 images = generate_images_for_content(
                     content=content,
@@ -201,14 +302,16 @@ def generate_blog_content(
                 # Inject images into content
                 if images:
                     content = inject_images_into_blog(content, images)
-                    logger.info(f"Injected {len(images)} images into blog content")
+                    logger.info(f"Successfully injected {len(images)} images into blog content")
                 else:
                     logger.warning("No images generated, returning content without images")
             
             except Exception as img_error:
                 # Log error but don't fail the entire generation
-                logger.error(f"Failed to generate/inject images: {str(img_error)}")
-                # Return content without images
+                logger.error(f"Image generation failed: {str(img_error)}", exc_info=True)
+                # Re-raise as warning to show to user
+                import warnings
+                warnings.warn(f"Images could not be generated: {str(img_error)}")
         
         # Return the generated content (with or without images)
         return content

@@ -6,7 +6,7 @@ Builds complete RAG chains for question answering using retrieved context.
 
 import logging
 from langchain.chains import RetrievalQA
-from langchain.schema import BaseRetriever
+from langchain_core.retrievers import BaseRetriever
 from langchain.llms.base import BaseLLM
 
 from app.core.rag.prompts import get_rag_prompt

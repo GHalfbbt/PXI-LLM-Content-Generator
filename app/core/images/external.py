@@ -43,17 +43,24 @@ class ExternalImageProvider(ImageProvider):
         - Automatic fallback between providers
     
     Example:
-        >>> provider = ExternalImageProvider()
+        >>> provider = ExternalImageProvider(preferred_provider="unsplash")
         >>> if provider.validate():
         ...     asset = provider.generate("mountain landscape")
         ...     print(asset.source)  # HTTPS URL to image
         ...     print(asset.attribution)  # Photo credit
     """
     
-    def __init__(self):
-        """Initialize the external image provider with environment config."""
+    def __init__(self, preferred_provider: Optional[str] = None):
+        """
+        Initialize the external image provider with environment config.
+        
+        Args:
+            preferred_provider: Optional preferred provider ("unsplash" or "pexels").
+                              If not specified or unavailable, will try both with fallback.
+        """
         self.unsplash_key = os.getenv("UNSPLASH_ACCESS_KEY")
         self.pexels_key = os.getenv("PEXELS_API_KEY")
+        self.preferred_provider = preferred_provider
     
     def validate(self) -> bool:
         """
@@ -103,10 +110,41 @@ class ExternalImageProvider(ImageProvider):
                 "Please set UNSPLASH_ACCESS_KEY or PEXELS_API_KEY."
             )
         
+        # If a specific provider is preferred and available, use it
+        if self.preferred_provider == "unsplash" and self.unsplash_key:
+            try:
+                result = self._search_unsplash(prompt, placement, **kwargs)
+                # Explicitly set provider in attribution for clarity
+                if "unsplash" not in result.attribution.lower():
+                    result.attribution = f"Imagen de Unsplash: {result.attribution}"
+                return result
+            except Exception as e:
+                logger.warning(f"Unsplash search failed: {str(e)}")
+                if not self.pexels_key:  # No fallback available
+                    raise ConnectionError(f"Failed to retrieve image from Unsplash: {str(e)}")
+                logger.info("Falling back to Pexels")
+        
+        if self.preferred_provider == "pexels" and self.pexels_key:
+            try:
+                result = self._search_pexels(prompt, placement, **kwargs)
+                # Explicitly set provider in attribution for clarity
+                if "pexels" not in result.attribution.lower():
+                    result.attribution = f"Imagen de Pexels: {result.attribution}"
+                return result
+            except Exception as e:
+                logger.warning(f"Pexels search failed: {str(e)}")
+                if not self.unsplash_key:  # No fallback available
+                    raise ConnectionError(f"Failed to retrieve image from Pexels: {str(e)}")
+                logger.info("Falling back to Unsplash")
+        
+        # No preference specified or preferred provider unavailable, try both
         # Try Unsplash first
         if self.unsplash_key:
             try:
-                return self._search_unsplash(prompt, placement, **kwargs)
+                result = self._search_unsplash(prompt, placement, **kwargs)
+                if "unsplash" not in result.attribution.lower():
+                    result.attribution = f"Imagen de Unsplash: {result.attribution}"
+                return result
             except Exception as e:
                 logger.warning(f"Unsplash search failed: {str(e)}")
                 # Continue to try Pexels
@@ -114,7 +152,10 @@ class ExternalImageProvider(ImageProvider):
         # Try Pexels as fallback
         if self.pexels_key:
             try:
-                return self._search_pexels(prompt, placement, **kwargs)
+                result = self._search_pexels(prompt, placement, **kwargs)
+                if "pexels" not in result.attribution.lower():
+                    result.attribution = f"Imagen de Pexels: {result.attribution}"
+                return result
             except Exception as e:
                 logger.warning(f"Pexels search failed: {str(e)}")
                 raise ConnectionError(

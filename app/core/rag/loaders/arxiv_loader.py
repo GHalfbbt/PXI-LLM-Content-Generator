@@ -7,7 +7,7 @@ Loads scientific papers from arXiv with clean metadata.
 from typing import List
 import logging
 from langchain_community.document_loaders import ArxivLoader
-from langchain.schema import Document
+from langchain_core.documents import Document
 
 from app.core.rag.config import RAGConfig
 

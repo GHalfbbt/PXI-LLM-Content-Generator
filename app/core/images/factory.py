@@ -36,7 +36,9 @@ class ImageProviderFactory:
     # Registry of available providers
     _PROVIDERS = {
         "huggingface": HuggingFaceImageProvider,
-        "external": ExternalImageProvider,
+        "external": ExternalImageProvider,  # Fallback for compatibility
+        "unsplash": ExternalImageProvider,
+        "pexels": ExternalImageProvider,
         "replicate": ReplicateImageProvider,
     }
     
@@ -47,7 +49,7 @@ class ImageProviderFactory:
         
         Args:
             provider_name: Name of the provider to create.
-                          Must be one of: "huggingface", "external", "replicate"
+                          Must be one of: "huggingface", "external", "unsplash", "pexels", "replicate"
         
         Returns:
             ImageProvider: Initialized provider instance.
@@ -70,6 +72,11 @@ class ImageProviderFactory:
             )
         
         provider_class = ImageProviderFactory._PROVIDERS[provider_name]
+        
+        # For external providers, pass the preferred provider name
+        if provider_name in ["unsplash", "pexels"]:
+            return provider_class(preferred_provider=provider_name)
+        
         return provider_class()
     
     @staticmethod

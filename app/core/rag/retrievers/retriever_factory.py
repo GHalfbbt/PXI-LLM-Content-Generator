@@ -5,8 +5,8 @@ Creates retriever instances from vector stores.
 """
 
 import logging
-from langchain.vectorstores.base import VectorStore
-from langchain.schema import BaseRetriever
+from langchain_core.vectorstores import VectorStore
+from langchain_core.retrievers import BaseRetriever
 
 from app.core.rag.config import RAGConfig
 

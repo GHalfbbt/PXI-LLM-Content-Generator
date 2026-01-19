@@ -14,7 +14,8 @@ from app.ui.sidebar import render_sidebar, render_sidebar_footer
 from app.ui.output import (
     render_output,
     render_empty_state,
-    render_error
+    render_error,
+    render_scientific_sources
 )
 
 # Import content generation functionality
@@ -180,8 +181,8 @@ def main() -> None:
             font-weight: 600;
         }
         
-        /* Button styling - red gradient */
-        .stButton > button {
+        /* Button styling - red gradient para TODOS los botones del sidebar */
+        [data-testid="stSidebar"] .stButton > button {
             background: linear-gradient(90deg, #EF4444 0%, #DC2626 100%);
             color: white;
             font-weight: 600;
@@ -191,7 +192,7 @@ def main() -> None:
             transition: all 0.3s ease;
         }
         
-        .stButton > button:hover {
+        [data-testid="stSidebar"] .stButton > button:hover {
             background: linear-gradient(90deg, #DC2626 0%, #B91C1C 100%);
             box-shadow: 0 4px 6px rgba(239, 68, 68, 0.4);
         }
@@ -365,6 +366,8 @@ def main() -> None:
                     # Clear previous content since identity changed
                     if "last_generated_content" in st.session_state:
                         del st.session_state["last_generated_content"]
+                    if "last_rag_sources" in st.session_state:
+                        del st.session_state["last_rag_sources"]
                     if "social_posts" in st.session_state:
                         del st.session_state["social_posts"]
                 
@@ -494,7 +497,7 @@ def render_blog_generation_ui(inputs: dict, ui_language: str) -> None:
                 
                 # Call the content generation chain with user inputs
                 # This is where the actual AI content generation happens
-                generated_content = generate_blog_content(
+                result = generate_blog_content(
                     topic=inputs["topic"],
                     audience=inputs["audience"],
                     tone=inputs["tone"],
@@ -509,8 +512,12 @@ def render_blog_generation_ui(inputs: dict, ui_language: str) -> None:
                     use_rag=inputs.get("rag_enabled", False),
                     rag_query=inputs.get("rag_query", ""),
                     rag_domain=inputs.get("rag_domain", "General"),
-                    rag_max_docs=inputs.get("rag_max_docs", 5)
+                    rag_max_docs=inputs.get("rag_max_docs", 3)
                 )
+                
+                # Extract content and sources from result
+                generated_content = result["content"]
+                rag_sources = result.get("rag_sources", [])
                 
                 # ============================================================
                 # SUCCESS STATE
@@ -519,6 +526,7 @@ def render_blog_generation_ui(inputs: dict, ui_language: str) -> None:
                 # Store the generated content in session state
                 # This allows the content to persist across reruns
                 st.session_state["last_generated_content"] = generated_content
+                st.session_state["last_rag_sources"] = rag_sources
                 
                 # Store the generation parameters used
                 # This allows detecting changes for auto-regeneration
@@ -539,6 +547,10 @@ def render_blog_generation_ui(inputs: dict, ui_language: str) -> None:
                 
                 # Render the generated content
                 render_output(generated_content, ui_language)
+                
+                # Render scientific sources if RAG was used
+                if rag_sources:
+                    render_scientific_sources(rag_sources, ui_language)
             
             except ValueError as ve:
                 # ============================================================
@@ -602,6 +614,10 @@ def render_blog_generation_ui(inputs: dict, ui_language: str) -> None:
             # This allows users to see their previous generation
             st.info(get_text("previous_content_info", ui_language))
             render_output(st.session_state["last_generated_content"], ui_language)
+            
+            # Also render RAG sources if available
+            if "last_rag_sources" in st.session_state and st.session_state["last_rag_sources"]:
+                render_scientific_sources(st.session_state["last_rag_sources"], ui_language)
         else:
             # No content has been generated yet
             # Display a friendly empty state with instructions

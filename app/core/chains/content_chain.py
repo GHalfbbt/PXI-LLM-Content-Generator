@@ -6,8 +6,9 @@ the prompt template with the LLM provider to create a complete chain
 that generates blog posts based on user inputs.
 """
 
-from typing import Optional
+from typing import Optional, Dict, Any, List
 import logging
+import os
 
 from app.core.prompts.blog import get_blog_prompt
 from app.core.identity import IdentityProfile, build_identity_context
@@ -94,26 +95,33 @@ def generate_blog_content(
                                      Defaults to 5.
     
     Returns:
-        str: The generated blog post content, ready for publication.
+        Dict[str, Any]: Dictionary containing:
+                       - "content": The generated blog post content
+                       - "rag_sources": List of source documents if RAG was used, empty list otherwise
+                                       Each source contains: title, authors, published, source (arXiv URL)
     
     Raises:
         ValueError: If required configuration (API keys) is missing.
         Exception: If content generation fails due to API errors or other issues.
     
     Example:
-        >>> content = generate_blog_content(
+        >>> result = generate_blog_content(
         ...     topic="Python Best Practices",
         ...     audience="intermediate developers",
         ...     tone="professional and educational",
         ...     language="English"
         ... )
-        >>> print(content)
+        >>> print(result["content"])
+        >>> print(result["rag_sources"])
     """
     # Use default values from settings if not provided
     if temperature is None:
         temperature = settings.DEFAULT_TEMPERATURE
     if max_tokens is None:
         max_tokens = settings.DEFAULT_MAX_TOKENS
+    
+    # Initialize list to store RAG source documents
+    rag_sources = []
     
     # Step 1: Initialize the selected LLM provider using the factory
     # The factory handles instantiation of Groq or Ollama based on provider
@@ -169,6 +177,16 @@ def generate_blog_content(
             from app.core.rag.retrievers.retriever_factory import RetrieverFactory
             from app.core.rag.config import RAGConfig
             
+            # Initialize LangSmith tracing if configured
+            langsmith_enabled = False
+            if os.getenv("LANGCHAIN_TRACING_V2", "").lower() == "true":
+                langsmith_api_key = os.getenv("LANGCHAIN_API_KEY")
+                if langsmith_api_key:
+                    langsmith_enabled = True
+                    logger.info("LangSmith tracing enabled for RAG operations")
+                else:
+                    logger.warning("LANGCHAIN_TRACING_V2 is true but LANGCHAIN_API_KEY not found")
+            
             logger.info(f"RAG enabled: searching arXiv for '{rag_query}' in domain '{rag_domain}'")
             
             # Build arXiv query with domain prefix if not General
@@ -191,6 +209,15 @@ def generate_blog_content(
             if documents:
                 logger.info(f"Retrieved {len(documents)} documents from arXiv")
                 
+                # Capture source documents for UI display
+                for doc in documents:
+                    rag_sources.append({
+                        "title": doc.metadata.get("title", "Untitled"),
+                        "authors": doc.metadata.get("authors", "Unknown"),
+                        "published": doc.metadata.get("published", "Unknown"),
+                        "source": doc.metadata.get("source", "#")
+                    })
+                
                 # Split documents into chunks
                 config = RAGConfig()
                 chunks = split_documents(
@@ -210,7 +237,19 @@ def generate_blog_content(
                 
                 # Create retriever and get relevant chunks
                 retriever = RetrieverFactory.create_default_retriever(vectorstore)
+                
+                # Log retrieval operation for LangSmith (metadata automatically captured)
+                if langsmith_enabled:
+                    logger.info(f"[LangSmith] Retrieving documents for query: {rag_query}")
+                    logger.info(f"[LangSmith] Domain: {rag_domain}, Max docs: {rag_max_docs}")
+                
                 relevant_docs = retriever.get_relevant_documents(rag_query)
+                
+                # Log retrieved chunks for LangSmith observability
+                if langsmith_enabled and relevant_docs:
+                    logger.info(f"[LangSmith] Retrieved {len(relevant_docs)} relevant chunks")
+                    for idx, doc in enumerate(relevant_docs, 1):
+                        logger.info(f"[LangSmith] Chunk {idx}: {doc.metadata.get('title', 'Unknown')[:50]}...")
                 
                 if relevant_docs:
                     logger.info(f"Found {len(relevant_docs)} relevant chunks")
@@ -313,8 +352,11 @@ def generate_blog_content(
                 import warnings
                 warnings.warn(f"Images could not be generated: {str(img_error)}")
         
-        # Return the generated content (with or without images)
-        return content
+        # Return the generated content with RAG sources
+        return {
+            "content": content,
+            "rag_sources": rag_sources
+        }
     
     except Exception as e:
         # Catch and re-raise with more context if generation fails

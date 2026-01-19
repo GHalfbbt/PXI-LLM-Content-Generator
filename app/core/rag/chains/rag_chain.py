@@ -66,11 +66,11 @@ def build_rag_chain(
         llm=llm,
         chain_type="stuff",
         retriever=retriever,
-        return_source_documents=False,
+        return_source_documents=True,  # Enable source document return for transparency
         chain_type_kwargs={
             "prompt": prompt
         }
     )
     
-    logger.info("RAG chain built successfully")
+    logger.info("RAG chain built successfully with source document return enabled")
     return rag_chain

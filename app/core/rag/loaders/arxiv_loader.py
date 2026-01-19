@@ -1,12 +1,12 @@
 """
 arXiv document loader.
 
-Loads scientific papers from arXiv with clean metadata.
+Loads scientific papers metadata from arXiv without downloading PDFs.
 """
 
 from typing import List
 import logging
-from langchain_community.document_loaders import ArxivLoader
+import arxiv
 from langchain_core.documents import Document
 
 from app.core.rag.config import RAGConfig
@@ -19,7 +19,7 @@ def load_arxiv_documents(
     max_docs: int = None
 ) -> List[Document]:
     """
-    Load documents from arXiv based on search query.
+    Load document metadata from arXiv based on search query (no PDF download).
     
     Args:
         query: Search query for arXiv (e.g., "quantum computing")
@@ -27,7 +27,7 @@ def load_arxiv_documents(
                  If None, uses RAGConfig.ARXIV_MAX_DOCS
     
     Returns:
-        List[Document]: List of documents with cleaned metadata
+        List[Document]: List of documents with metadata (title, authors, abstract, URL)
     
     Raises:
         ValueError: If query is empty
@@ -46,31 +46,30 @@ def load_arxiv_documents(
     logger.info(f"Loading {max_docs} documents from arXiv for query: '{query}'")
     
     try:
-        # Initialize arXiv loader
-        loader = ArxivLoader(
+        # Use arxiv API directly to get metadata only (no PDF download)
+        client = arxiv.Client()
+        search = arxiv.Search(
             query=query,
-            load_max_docs=max_docs
+            max_results=max_docs,
+            sort_by=arxiv.SortCriterion.Relevance
         )
         
-        # Load documents
-        documents = loader.load()
+        documents = []
+        for result in client.results(search):
+            # Create document with abstract as content and metadata
+            doc = Document(
+                page_content=result.summary,  # Use abstract as content
+                metadata={
+                    "title": result.title,
+                    "authors": ", ".join([author.name for author in result.authors]),
+                    "published": result.published.strftime("%Y-%m-%d"),
+                    "source": result.entry_id,  # arXiv URL
+                    "arxiv_id": result.entry_id.split("/")[-1]
+                }
+            )
+            documents.append(doc)
         
-        # Clean and standardize metadata
-        for doc in documents:
-            # Ensure required metadata fields
-            doc.metadata["source"] = "arxiv"
-            
-            # Keep only relevant metadata
-            cleaned_metadata = {
-                "title": doc.metadata.get("Title", "Unknown"),
-                "authors": doc.metadata.get("Authors", "Unknown"),
-                "published": doc.metadata.get("Published", "Unknown"),
-                "source": "arxiv"
-            }
-            
-            doc.metadata = cleaned_metadata
-        
-        logger.info(f"Successfully loaded {len(documents)} documents from arXiv")
+        logger.info(f"Successfully loaded {len(documents)} documents from arXiv (metadata only)")
         return documents
     
     except Exception as e:

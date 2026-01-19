@@ -112,48 +112,148 @@ def render_sidebar() -> Dict[str, Any]:
     # ========================================================================
     # SECTION 0.5: SCIENTIFIC KNOWLEDGE (RAG) - GROUND TRUTH DECISION
     # ========================================================================
-    st.sidebar.subheader("🧠 Scientific Knowledge (RAG)")
+    st.sidebar.subheader("🧠 Conocimiento Científico (RAG)")
     
     rag_enabled = st.sidebar.checkbox(
-        label="Enable scientific RAG (arXiv)",
+        label="Activar RAG científico (arXiv)",
         value=False,
-        help="Ground your content in real scientific research from arXiv to reduce hallucinations and provide evidence-based information",
+        help="Fundamenta tu contenido en investigación científica real de arXiv para reducir alucinaciones",
         key="rag_enabled"
     )
     
     # Initialize default values
     rag_query = ""
     rag_domain = "General"
-    rag_max_docs = 5
+    rag_max_docs = 3
+    rag_documents_preview = []
     
     # Show RAG controls when enabled
     if rag_enabled:
-        rag_query = st.sidebar.text_input(
-            label="Scientific topic or question",
-            value="",
-            placeholder="e.g., quantum computing applications",
-            help="Enter a specific scientific topic or question to search for relevant research papers",
-            key="rag_query"
-        )
-        
+        # Base de Datos Científica (Domain)
         rag_domain = st.sidebar.selectbox(
-            label="Scientific domain",
+            label="📚 Base de Datos Científica",
             options=["General", "AI", "Physics", "Biomedicine", "Astrophysics"],
             index=0,
-            help="Narrow the search to a specific scientific field",
+            help="Selecciona el dominio científico para enfocar la búsqueda",
             key="rag_domain"
         )
         
+        # Tema de investigación
+        rag_query = st.sidebar.text_input(
+            label="🔍 Tema de investigación",
+            value="",
+            placeholder="ej: computación cuántica aplicada",
+            help="Introduce un tema o pregunta científica específica",
+            key="rag_query"
+        )
+        
+        # Cantidad de papers
         rag_max_docs = st.sidebar.slider(
-            label="Max arXiv papers",
+            label="📊 Cantidad de papers (Máx 10)",
             min_value=1,
             max_value=10,
-            value=5,
-            help="Maximum number of scientific papers to retrieve and analyze",
+            value=3,
+            help="Número máximo de artículos científicos a recuperar (default: 3)",
             key="rag_max_docs"
         )
         
-        st.sidebar.caption("ℹ️ Your content will be grounded in real scientific research, reducing AI hallucinations")
+        # CSS solo para expanders
+        st.sidebar.markdown("""
+        <style>
+        /* Expanders de documentos - azul suave con texto blanco */
+        [data-testid="stSidebar"] .streamlit-expanderHeader {
+            background: linear-gradient(135deg, #60A5FA 0%, #3B82F6 100%) !important;
+            color: white !important;
+            font-weight: 600 !important;
+            border-radius: 0.5rem !important;
+            padding: 0.5rem 1rem !important;
+        }
+        
+        [data-testid="stSidebar"] .streamlit-expanderHeader:hover {
+            background: linear-gradient(135deg, #3B82F6 0%, #2563EB 100%) !important;
+        }
+        
+        /* Contenido del expander con fondo azul claro y texto en blanco/azul oscuro */
+        [data-testid="stSidebar"] .streamlit-expanderContent {
+            background: rgba(96, 165, 250, 0.2) !important;
+            border-left: 3px solid #3B82F6 !important;
+            padding: 0.5rem 1rem !important;
+        }
+        
+        /* Texto dentro del expander en blanco para mejor contraste */
+        [data-testid="stSidebar"] .streamlit-expanderContent p,
+        [data-testid="stSidebar"] .streamlit-expanderContent span,
+        [data-testid="stSidebar"] .streamlit-expanderContent div {
+            color: white !important;
+        }
+        </style>
+        """, unsafe_allow_html=True)
+        
+        update_knowledge = st.sidebar.button(
+            label="🔄 Actualizar Conocimiento",
+            type="primary",
+            help="Busca y carga documentos científicos de arXiv",
+            use_container_width=True,
+            key="update_knowledge_button"
+        )
+        
+        # Preview de documentos disponibles (solo si hay query y se presionó el botón)
+        if update_knowledge and rag_query.strip():
+            with st.spinner("Buscando documentos en arXiv..."):
+                try:
+                    # Import here to avoid circular imports
+                    from app.core.rag.loaders.arxiv_loader import load_arxiv_documents
+                    
+                    # Build domain-specific query
+                    arxiv_query = rag_query
+                    if rag_domain != "General":
+                        domain_prefixes = {
+                            "AI": "artificial intelligence OR machine learning OR deep learning",
+                            "Physics": "physics OR quantum",
+                            "Biomedicine": "biology OR medicine OR biomedical",
+                            "Astrophysics": "astronomy OR astrophysics OR cosmology"
+                        }
+                        prefix = domain_prefixes.get(rag_domain, "")
+                        if prefix:
+                            arxiv_query = f"({prefix}) AND ({rag_query})"
+                    
+                    # Load documents
+                    documents = load_arxiv_documents(arxiv_query, max_docs=rag_max_docs)
+                    
+                    if documents:
+                        # Store in session state
+                        st.session_state["rag_documents_preview"] = [
+                            {
+                                "title": doc.metadata.get("title", "Sin título"),
+                                "authors": doc.metadata.get("authors", "Desconocido"),
+                                "published": doc.metadata.get("published", "Desconocido")
+                            }
+                            for doc in documents
+                        ]
+                        st.sidebar.success(f"✅ {len(documents)} documentos cargados")
+                    else:
+                        st.session_state["rag_documents_preview"] = []
+                        st.sidebar.warning("No se encontraron documentos")
+                
+                except Exception as e:
+                    st.sidebar.error(f"Error: {str(e)}")
+                    st.session_state["rag_documents_preview"] = []
+        
+        # Mostrar documentos disponibles
+        st.sidebar.markdown("---")
+        st.sidebar.markdown("**📑 Documentos disponibles:**")
+        
+        # Get documents from session state
+        available_docs = st.session_state.get("rag_documents_preview", [])
+        
+        if available_docs:
+            # Show dropdown with available documents
+            for idx, doc in enumerate(available_docs, 1):
+                with st.sidebar.expander(f"{idx}. {doc['title'][:50]}...", expanded=False):
+                    st.caption(f"**Autores:** {doc['authors']}")
+                    st.caption(f"**Publicado:** {doc['published']}")
+        else:
+            st.sidebar.info("ℹ️ No hay documentos indexados. Presiona 'Actualizar Conocimiento' para buscar.")
     
     st.sidebar.divider()
     

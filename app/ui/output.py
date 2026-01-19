@@ -8,7 +8,7 @@ Supports multiple UI languages.
 """
 
 import streamlit as st
-from typing import Optional
+from typing import Optional, List, Dict, Any
 
 from app.utils.i18n import get_text
 
@@ -132,6 +132,77 @@ def render_output(content: Optional[str], ui_language: str = "English") -> None:
     
     with col2:
         st.success("💡 **Copy text:** Use the 'Markdown' tab above", icon="📋")
+
+
+# ============================================================================
+# SCIENTIFIC SOURCES RENDERING (RAG)
+# ============================================================================
+
+def render_scientific_sources(sources: List[Dict[str, str]], ui_language: str = "English") -> None:
+    """
+    Render the scientific sources used by RAG in a user-friendly format.
+    
+    This function displays arXiv papers that were used to ground the content
+    generation in scientific research. It provides transparency and allows
+    users to verify the sources of information.
+    
+    Only displayed when RAG is enabled and sources are available.
+    
+    Args:
+        sources (List[Dict]): List of source documents with metadata:
+                             - title: Paper title
+                             - authors: Paper authors
+                             - published: Publication date
+                             - source: arXiv URL
+        ui_language (str): The UI language for translations. Default is "English".
+    
+    Returns:
+        None: This function only renders UI components.
+    
+    Example:
+        >>> sources = [
+        ...     {"title": "Quantum Computing", "authors": "Smith, J.", 
+        ...      "published": "2024-01-15", "source": "https://arxiv.org/abs/2401.12345"}
+        ... ]
+        >>> render_scientific_sources(sources, "English")
+    """
+    # Early return if no sources
+    if not sources:
+        return
+    
+    # Display section header
+    st.markdown("")
+    st.divider()
+    st.subheader("📚 Scientific Sources (arXiv)")
+    st.markdown("This content is grounded in the following scientific research papers:")
+    
+    # Display each source in an expandable section
+    for idx, source in enumerate(sources, 1):
+        with st.expander(f"📄 **{idx}. {source.get('title', 'Untitled')}**", expanded=False):
+            # Authors
+            authors = source.get('authors', 'Unknown')
+            if authors and authors != 'Unknown':
+                # Handle list of authors
+                if isinstance(authors, list):
+                    authors_str = ", ".join(authors)
+                else:
+                    authors_str = authors
+                st.markdown(f"**👥 Authors:** {authors_str}")
+            
+            # Publication date
+            published = source.get('published', 'Unknown')
+            if published and published != 'Unknown':
+                st.markdown(f"**📅 Published:** {published}")
+            
+            # arXiv link with button style
+            arxiv_url = source.get('source', '#')
+            if arxiv_url and arxiv_url != '#':
+                st.markdown(f"**🔗 Read on arXiv:** [View Paper]({arxiv_url})")
+                st.link_button("📖 Open in arXiv", arxiv_url, use_container_width=True)
+                st.markdown(f"[🔗 View on arXiv]({arxiv_url})")
+    
+    # Add info message
+    st.info("ℹ️ These papers were used by the AI to provide scientifically accurate and evidence-based content.", icon="✅")
 
 
 # ============================================================================
